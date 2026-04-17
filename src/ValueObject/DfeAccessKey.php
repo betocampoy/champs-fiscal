@@ -42,7 +42,7 @@ final class DfeAccessKey
 
     public function getUf(): ?string
     {
-        return UfCodeMap::getUfByCode($this->getUfCode());
+        return UfCodeMap::stateFromCode($this->getUfCode());
     }
 
     /**

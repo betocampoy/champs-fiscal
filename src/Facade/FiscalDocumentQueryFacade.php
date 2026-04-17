@@ -117,7 +117,7 @@ final class FiscalDocumentQueryFacade
         }
 
         $model = $key->getModel();
-        $documentType = DfeAccessKeyType::fromModelCode($key->getModelCode());
+
         return match ($model) {
             '60' => 'DCE', // ajustar se necessário
             '55' => 'NFE',
