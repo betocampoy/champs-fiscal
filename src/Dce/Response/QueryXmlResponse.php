@@ -157,4 +157,27 @@ final class QueryXmlResponse extends XmlResponse
 
         return $value === null ? null : (string) $value;
     }
+
+    public function getProtocolReceiptDate(): ?string
+    {
+        $value = $this->data['protDCe']['infProt']['dhRecbto'] ?? null;
+        return $value === null ? null : (string) $value;
+    }
+
+    public function getProtocolStatusCode(): ?string
+    {
+        $value = $this->data['protDCe']['infProt']['cStat'] ?? null;
+        return $value === null ? null : (string) $value;
+    }
+
+    public function getProtocolStatusMessage(): ?string
+    {
+        $value = $this->data['protDCe']['infProt']['xMotivo'] ?? null;
+        return $value === null ? null : (string) $value;
+    }
+
+    public function isAuthorized(): bool
+    {
+        return $this->getStatusCode() === '100';
+    }
 }

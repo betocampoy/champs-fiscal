@@ -2,14 +2,27 @@
 
 namespace BetoCampoy\Champs\Fiscal\ValueObject;
 
-use BetoCampoy\Champs\Fiscal\Brazil\UfCodeMap;
 use InvalidArgumentException;
 
 final class DfeAccessKey
 {
     private string $value;
 
-    public function __construct(string $value)
+    private string $ufCode;
+    private string $yearMonth;
+    private string $cnpj;
+    private string $modelCode;
+    private string $serie;
+    private string $number;
+    private string $emissionTypeCode;
+    private string $numericCode;
+    private string $checkDigit;
+
+    private DfeAccessKeyType $type;
+
+    private bool $valid;
+
+    private function __construct(string $value)
     {
         $normalized = preg_replace('/\D+/', '', $value ?? '');
 
@@ -18,6 +31,12 @@ final class DfeAccessKey
         }
 
         $this->value = $normalized;
+
+        $this->parse();
+        $this->type = DfeAccessKeyType::fromModelCode($this->modelCode);
+
+        // 🔥 VALID não depende do tipo!
+        $this->valid = $this->validateCheckDigit();
     }
 
     public static function fromString(string $value): self
@@ -25,179 +44,139 @@ final class DfeAccessKey
         return new self($value);
     }
 
-    public function getValue(): string
+    private function parse(): void
     {
-        return $this->value;
+        $this->ufCode = substr($this->value, 0, 2);
+        $this->yearMonth = substr($this->value, 2, 4);
+        $this->cnpj = substr($this->value, 6, 14);
+        $this->modelCode = substr($this->value, 20, 2);
+        $this->serie = substr($this->value, 22, 3);
+        $this->number = substr($this->value, 25, 9);
+        $this->emissionTypeCode = substr($this->value, 34, 1);
+        $this->numericCode = substr($this->value, 35, 8);
+        $this->checkDigit = substr($this->value, 43, 1);
     }
 
-    public function __toString(): string
+    private function validateCheckDigit(): bool
+    {
+        $key43 = substr($this->value, 0, 43);
+
+        $weights = [2,3,4,5,6,7,8,9];
+        $weightIndex = 0;
+        $sum = 0;
+
+        for ($i = 42; $i >= 0; $i--) {
+            $sum += intval($key43[$i]) * $weights[$weightIndex];
+            $weightIndex = ($weightIndex + 1) % 8;
+        }
+
+        $mod = $sum % 11;
+        $dv = ($mod === 0 || $mod === 1) ? 0 : 11 - $mod;
+
+        return (string)$dv === $this->checkDigit;
+    }
+
+    // =========================
+    // GETTERS
+    // =========================
+
+    public function getValue(): string
     {
         return $this->value;
     }
 
     public function getUfCode(): string
     {
-        return substr($this->value, 0, 2);
+        return $this->ufCode;
     }
 
-    public function getUf(): ?string
-    {
-        return UfCodeMap::stateFromCode($this->getUfCode());
-    }
-
-    /**
-     * AAMM
-     */
     public function getYearMonth(): string
     {
-        return substr($this->value, 2, 4);
+        return $this->yearMonth;
     }
 
     public function getYear(): string
     {
-        return '20' . substr($this->value, 2, 2);
+        return '20' . substr($this->yearMonth, 0, 2);
     }
 
     public function getMonth(): string
     {
-        return substr($this->value, 4, 2);
+        return substr($this->yearMonth, 2, 2);
     }
 
     public function getCnpj(): string
     {
-        return substr($this->value, 6, 14);
+        return $this->cnpj;
     }
 
     public function getModelCode(): string
     {
-        return substr($this->value, 20, 2);
-    }
-
-    public function getType(): DfeAccessKeyType
-    {
-        return DfeAccessKeyType::fromModelCode($this->getModelCode());
-    }
-
-    public function isNfe(): bool
-    {
-        return $this->getType() === DfeAccessKeyType::NFE;
-    }
-
-    public function isCte(): bool
-    {
-        return $this->getType() === DfeAccessKeyType::CTE;
-    }
-
-    public function isCteOs(): bool
-    {
-        return $this->getType() === DfeAccessKeyType::CTE_OS;
-    }
-
-    public function isMdfe(): bool
-    {
-        return $this->getType() === DfeAccessKeyType::MDFE;
-    }
-
-    public function isDce(): bool
-    {
-        return $this->getType() === DfeAccessKeyType::DCE;
+        return $this->modelCode;
     }
 
     public function getSerie(): string
     {
-        return substr($this->value, 22, 3);
+        return $this->serie;
     }
 
     public function getNumber(): string
     {
-        return substr($this->value, 25, 9);
+        return $this->number;
     }
 
     public function getEmissionTypeCode(): string
     {
-        return substr($this->value, 34, 1);
+        return $this->emissionTypeCode;
     }
 
     public function getNumericCode(): string
     {
-        return substr($this->value, 35, 8);
+        return $this->numericCode;
     }
 
     public function getCheckDigit(): string
     {
-        return substr($this->value, 43, 1);
+        return $this->checkDigit;
     }
 
-    public function isFromUfCode(string $ufCode): bool
+    public function getType(): DfeAccessKeyType
     {
-        return $this->getUfCode() === $ufCode;
-    }
-
-    public function isFromUf(string $uf): bool
-    {
-        $currentUf = $this->getUf();
-
-        return $currentUf !== null && strtoupper($currentUf) === strtoupper($uf);
-    }
-
-    public function belongsToCnpj(string $cnpj): bool
-    {
-        $normalized = preg_replace('/\D+/', '', $cnpj ?? '');
-
-        return $this->getCnpj() === $normalized;
+        return $this->type;
     }
 
     public function isValid(): bool
     {
-        return $this->calculateCheckDigit() === (int) $this->getCheckDigit();
+        return $this->valid;
     }
 
-    public function assertValid(): void
-    {
-        if (!$this->isValid()) {
-            throw new InvalidArgumentException('A chave de acesso informada possui dígito verificador inválido.');
-        }
-    }
+    // =========================
+    // DEBUG / OUTPUT
+    // =========================
 
     public function toArray(): array
     {
         return [
-            'value' => $this->getValue(),
-            'ufCode' => $this->getUfCode(),
-            'uf' => $this->getUf(),
-            'yearMonth' => $this->getYearMonth(),
+            'value' => $this->value,
+            'ufCode' => $this->ufCode,
+            'yearMonth' => $this->yearMonth,
             'year' => $this->getYear(),
             'month' => $this->getMonth(),
-            'cnpj' => $this->getCnpj(),
-            'modelCode' => $this->getModelCode(),
-            'type' => $this->getType()->name,
-            'typeLabel' => $this->getType()->label(),
-            'serie' => $this->getSerie(),
-            'number' => $this->getNumber(),
-            'emissionTypeCode' => $this->getEmissionTypeCode(),
-            'numericCode' => $this->getNumericCode(),
-            'checkDigit' => $this->getCheckDigit(),
-            'valid' => $this->isValid(),
+            'cnpj' => $this->cnpj,
+            'modelCode' => $this->modelCode,
+            'type' => $this->type->name,
+            'typeLabel' => $this->type->label(),
+            'serie' => $this->serie,
+            'number' => $this->number,
+            'emissionTypeCode' => $this->emissionTypeCode,
+            'numericCode' => $this->numericCode,
+            'checkDigit' => $this->checkDigit,
+            'valid' => $this->valid,
         ];
     }
 
-    private function calculateCheckDigit(): int
+    public function __toString(): string
     {
-        $base = substr($this->value, 0, 43);
-        $weights = [4, 3, 2, 9, 8, 7, 6, 5];
-
-        $sum = 0;
-        $weightIndex = 0;
-
-        for ($i = strlen($base) - 1; $i >= 0; $i--) {
-            $digit = (int) $base[$i];
-            $sum += $digit * $weights[$weightIndex];
-            $weightIndex = ($weightIndex + 1) % count($weights);
-        }
-
-        $mod = $sum % 11;
-        $dv = 11 - $mod;
-
-        return $dv >= 10 ? 0 : $dv;
+        return $this->value;
     }
 }

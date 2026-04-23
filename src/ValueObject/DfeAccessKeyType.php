@@ -8,14 +8,7 @@ enum DfeAccessKeyType: string
     case CTE = '57';
     case MDFE = '58';
     case CTE_OS = '67';
-
-    /**
-     * Não é modelo fiscal nacional padrão consolidado como NF-e/CT-e.
-     * Mantido aqui apenas se você decidir tratar algum modelo próprio
-     * ou convenção interna futuramente.
-     */
-    case DCE = '60';
-
+    case DCE = '99';
     case UNKNOWN = '00';
 
     public static function fromModelCode(string $modelCode): self
@@ -25,7 +18,7 @@ enum DfeAccessKeyType: string
             '57' => self::CTE,
             '58' => self::MDFE,
             '67' => self::CTE_OS,
-            '60' => self::DCE,
+            '99' => self::DCE,
             default => self::UNKNOWN,
         };
     }

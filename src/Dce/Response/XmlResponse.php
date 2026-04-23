@@ -39,4 +39,28 @@ abstract class XmlResponse
 
         return $value === null ? null : (string) $value;
     }
+
+    public function getEnvironment(): ?string
+    {
+        $value = $this->data['tpAmb'] ?? null;
+        return $value === null ? null : (string) $value;
+    }
+
+    public function getApplicationVersion(): ?string
+    {
+        $value = $this->data['verAplic'] ?? null;
+        return $value === null ? null : (string) $value;
+    }
+
+    public function getUfCode(): ?string
+    {
+        $value = $this->data['cUF'] ?? null;
+        return $value === null ? null : (string) $value;
+    }
+
+    public function getReceiptDate(): ?string
+    {
+        $value = $this->data['dhRecbto'] ?? null;
+        return $value === null ? null : (string) $value;
+    }
 }
