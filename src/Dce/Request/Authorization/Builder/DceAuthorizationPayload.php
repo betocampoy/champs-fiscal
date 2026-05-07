@@ -63,6 +63,8 @@ final class DceAuthorizationPayload
     }
 
     /**
+     * Grupo de transporte/frete da DC-e.
+     *
      * @return array<string, mixed>
      */
     public function getTransp(): array
@@ -71,6 +73,38 @@ final class DceAuthorizationPayload
     }
 
     /**
+     * Grupo oficial Fisco.
+     *
+     * @return array<string, mixed>
+     */
+    public function getFisco(): array
+    {
+        return $this->data['Fisco'] ?? [];
+    }
+
+    /**
+     * Grupo oficial Marketplace.
+     *
+     * @return array<string, mixed>
+     */
+    public function getMarketplace(): array
+    {
+        return $this->data['Marketplace'] ?? [];
+    }
+
+    /**
+     * Grupo oficial EmpEmisProp.
+     *
+     * @return array<string, mixed>
+     */
+    public function getEmpEmisProp(): array
+    {
+        return $this->data['EmpEmisProp'] ?? [];
+    }
+
+    /**
+     * Grupo oficial Transportadora.
+     *
      * @return array<string, mixed>
      */
     public function getTransportadora(): array
@@ -92,6 +126,21 @@ final class DceAuthorizationPayload
     public function getInfAdic(): array
     {
         return $this->data['infAdic'] ?? [];
+    }
+
+    public function hasFisco(): bool
+    {
+        return $this->getFisco() !== [];
+    }
+
+    public function hasMarketplace(): bool
+    {
+        return $this->getMarketplace() !== [];
+    }
+
+    public function hasEmpEmisProp(): bool
+    {
+        return $this->getEmpEmisProp() !== [];
     }
 
     public function hasTransportadora(): bool

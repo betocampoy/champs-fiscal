@@ -76,4 +76,31 @@ final class DocumentResponse
             xmlResponse: $xmlResponse,
         );
     }
+
+    public function hasXmlResponse(): bool
+    {
+        return $this->xmlResponse !== null;
+    }
+
+    public function getStatusCode(): ?string
+    {
+        return $this->xmlResponse?->getStatusCode();
+    }
+
+    public function getStatusMessage(): ?string
+    {
+        return $this->xmlResponse?->getStatusMessage() ?? $this->error;
+    }
+
+    public function isAuthorized(): bool
+    {
+        return $this->success && $this->getStatusCode() === '100';
+    }
+
+    public function isRejected(): bool
+    {
+        return $this->success
+            && $this->getStatusCode() !== null
+            && $this->getStatusCode() !== '100';
+    }
 }

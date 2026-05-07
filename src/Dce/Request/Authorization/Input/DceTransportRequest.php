@@ -30,6 +30,19 @@ final class DceTransportRequest
      */
     private ?string $freightValue = null;
 
+    private ?string $carrierCnpj = null;
+
+    public function getCarrierCnpj(): ?string
+    {
+        return $this->carrierCnpj;
+    }
+
+    public function setCarrierCnpj(?string $carrierCnpj): self
+    {
+        $this->carrierCnpj = $carrierCnpj;
+        return $this;
+    }
+
     public function getFreightMode(): ?string
     {
         return $this->freightMode;

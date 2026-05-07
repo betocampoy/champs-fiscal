@@ -2,6 +2,7 @@
 
 namespace BetoCampoy\Champs\Fiscal\Dce\Authorization;
 
+use BetoCampoy\Champs\Fiscal\Dce\Enum\DceIssuerType;
 use InvalidArgumentException;
 
 final class DceAuthorizationBusinessValidator
@@ -82,6 +83,72 @@ final class DceAuthorizationBusinessValidator
 
     private function validateActorGroup(DceAuthorizationData $data): void
     {
+        $issuerType = DceIssuerType::from($data->tpEmit);
+
+        $count = 0;
+
+        if ($data->fisco !== null) {
+            $count++;
+        }
+
+        if ($data->marketplace !== null) {
+            $count++;
+        }
+
+        if ($data->transportadoraEmissora !== null) {
+            $count++;
+        }
+
+        match ($issuerType) {
+            DceIssuerType::FISCO => $this->assertGroupExists($data->fisco, 'Fisco'),
+            DceIssuerType::MARKETPLACE => $this->assertGroupExists($data->marketplace, 'Marketplace'),
+            DceIssuerType::OWN => null,
+            DceIssuerType::CARRIER => $this->assertGroupExists(
+                $data->transportadoraEmissora,
+                'Transportadora'
+            ),
+        };
+
+        if ($issuerType === DceIssuerType::OWN && $count !== 0) {
+            throw new InvalidArgumentException(
+                'Emissão própria não deve possuir grupo emissor complementar.'
+            );
+        }
+
+        if (
+            in_array($issuerType, [
+                DceIssuerType::FISCO,
+                DceIssuerType::MARKETPLACE,
+                DceIssuerType::CARRIER
+            ], true)
+            && $count !== 1
+        ) {
+            throw new InvalidArgumentException(
+                'Deve existir exatamente um grupo emissor complementar.'
+            );
+        }
+
+        if (
+            $issuerType === DceIssuerType::OWN
+            && !$this->hasValue($data->emitCnpj)
+        ) {
+            throw new InvalidArgumentException(
+                'Emissão própria exige emitente com CNPJ.'
+            );
+        }
+    }
+
+    private function assertGroupExists(?array $group, string $label): void
+    {
+        if ($group === null) {
+            throw new InvalidArgumentException(
+                sprintf('tpEmit exige grupo %s.', $label)
+            );
+        }
+    }
+
+    private function validateActorGroup1(DceAuthorizationData $data): void
+    {
         $count = 0;
 
         if ($data->fisco !== null) {
@@ -108,9 +175,9 @@ final class DceAuthorizationBusinessValidator
             throw new InvalidArgumentException('tpEmit=1 exige grupo Marketplace.');
         }
 
-        if ($data->tpEmit === 2 && $data->emissaoPropria === null) {
-            throw new InvalidArgumentException('tpEmit=2 exige grupo EmpEmisProp.');
-        }
+//        if ($data->tpEmit === 2 && $data->emissaoPropria === null) {
+//            throw new InvalidArgumentException('tpEmit=2 exige grupo EmpEmisProp.');
+//        }
 
         if ($data->tpEmit === 3 && $data->transportadoraEmissora === null) {
             throw new InvalidArgumentException('tpEmit=3 exige grupo Transportadora.');

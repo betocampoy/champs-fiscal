@@ -48,7 +48,7 @@ final class DceCancelDataFactory
         if ($nProt === '') {
             throw new InvalidArgumentException('Campo obrigatório não informado: nProt');
         }
-
+        
         return new DceCancelData(
             versao: $payload->getVersion(),
             cOrgao: $cOrgao,

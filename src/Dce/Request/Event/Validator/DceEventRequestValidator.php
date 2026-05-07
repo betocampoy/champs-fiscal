@@ -5,143 +5,163 @@ declare(strict_types=1);
 namespace BetoCampoy\Champs\Fiscal\Dce\Request\Event\Validator;
 
 use BetoCampoy\Champs\Fiscal\Dce\Request\Event\Input\DceEventRequest;
-use InvalidArgumentException;
+use BetoCampoy\Champs\Fiscal\Validator\ValidationResult;
 
 final class DceEventRequestValidator
 {
-    public function validate(DceEventRequest $request): void
+    public function validate(DceEventRequest $request): ValidationResult
     {
-        $this->validateAccessKey($request->getAccessKey());
-        $this->validateEnvironment($request->getEnvironment());
-        $this->validateVersion($request->getVersion());
-        $this->validateService($request->getService());
-        $this->validateEventVersion($request->getEventVersion());
-        $this->validateEventType($request->getEventType());
-        $this->validateSequence($request->getSequence());
-        $this->validateEventDate($request->getEventDate());
-        $this->validateAuthorDocument($request->getAuthorDocument());
-        $this->validateJustification($request->getJustification());
+        $result = new ValidationResult();
+
+        $this->validateAccessKey($request->getAccessKey(), $result);
+        $this->validateEnvironment($request->getEnvironment(), $result);
+        $this->validateVersion($request->getVersion(), $result);
+        $this->validateService($request->getService(), $result);
+        $this->validateEventVersion($request->getEventVersion(), $result);
+        $this->validateEventType($request->getEventType(), $result);
+        $this->validateSequence($request->getSequence(), $result);
+        $this->validateEventDate($request->getEventDate(), $result);
+        $this->validateAuthorDocument($request->getAuthorDocument(), $result);
+        $this->validateJustification($request->getJustification(), $result);
+
+        return $result;
     }
 
-    private function validateAccessKey(?string $accessKey): void
+    private function validateAccessKey(?string $accessKey, ValidationResult $result): void
     {
-        if ($accessKey === null || $accessKey === '') {
-            throw new InvalidArgumentException('A chave de acesso é obrigatória.');
+        if (!$this->hasText($accessKey)) {
+            $result->addError('accessKey', 'A chave de acesso é obrigatória.');
+            return;
         }
 
         if (!preg_match('/^\d{44}$/', $accessKey)) {
-            throw new InvalidArgumentException('A chave de acesso deve conter 44 dígitos.');
+            $result->addError('accessKey', 'A chave de acesso deve conter 44 dígitos.');
         }
     }
 
-    private function validateEnvironment(?string $environment): void
+    private function validateEnvironment(?string $environment, ValidationResult $result): void
     {
-        if ($environment === null || $environment === '') {
-            throw new InvalidArgumentException('O ambiente é obrigatório.');
+        if (!$this->hasText($environment)) {
+            $result->addError('environment', 'O ambiente é obrigatório.');
+            return;
         }
 
         if (!in_array($environment, ['1', '2'], true)) {
-            throw new InvalidArgumentException('O ambiente deve ser 1 (produção) ou 2 (homologação).');
+            $result->addError('environment', 'O ambiente deve ser 1 (produção) ou 2 (homologação).');
         }
     }
 
-    private function validateVersion(?string $version): void
+    private function validateVersion(?string $version, ValidationResult $result): void
     {
-        if ($version === null || $version === '') {
-            throw new InvalidArgumentException('A versão é obrigatória.');
+        if (!$this->hasText($version)) {
+            $result->addError('version', 'A versão é obrigatória.');
+            return;
         }
 
         if ($version !== '1.00') {
-            throw new InvalidArgumentException('A versão do evento deve ser 1.00.');
+            $result->addError('version', 'A versão do evento deve ser 1.00.');
         }
     }
 
-    private function validateService(?string $service): void
+    private function validateService(?string $service, ValidationResult $result): void
     {
-        if ($service === null || $service === '') {
-            throw new InvalidArgumentException('O serviço é obrigatório.');
+        if (!$this->hasText($service)) {
+            $result->addError('service', 'O serviço é obrigatório.');
+            return;
         }
 
         if ($service !== 'RECEPCIONAR_EVENTO') {
-            throw new InvalidArgumentException('O serviço do evento deve ser RECEPCIONAR_EVENTO.');
+            $result->addError('service', 'O serviço do evento deve ser RECEPCIONAR_EVENTO.');
         }
     }
 
-    private function validateEventVersion(?string $eventVersion): void
+    private function validateEventVersion(?string $eventVersion, ValidationResult $result): void
     {
-        if ($eventVersion === null || $eventVersion === '') {
-            throw new InvalidArgumentException('A versão do evento é obrigatória.');
+        if (!$this->hasText($eventVersion)) {
+            $result->addError('eventVersion', 'A versão do evento é obrigatória.');
+            return;
         }
 
         if ($eventVersion !== '1.00') {
-            throw new InvalidArgumentException('A versão do detalhe do evento deve ser 1.00.');
+            $result->addError('eventVersion', 'A versão do detalhe do evento deve ser 1.00.');
         }
     }
 
-    private function validateEventType(?string $eventType): void
+    private function validateEventType(?string $eventType, ValidationResult $result): void
     {
-        if ($eventType === null || $eventType === '') {
-            throw new InvalidArgumentException('O tipo do evento é obrigatório.');
+        if (!$this->hasText($eventType)) {
+            $result->addError('eventType', 'O tipo do evento é obrigatório.');
+            return;
         }
 
         if (!preg_match('/^\d+$/', $eventType)) {
-            throw new InvalidArgumentException('O tipo do evento deve conter apenas dígitos.');
+            $result->addError('eventType', 'O tipo do evento deve conter apenas dígitos.');
         }
     }
 
-    private function validateSequence(?string $sequence): void
+    private function validateSequence(?string $sequence, ValidationResult $result): void
     {
-        if ($sequence === null || $sequence === '') {
-            throw new InvalidArgumentException('A sequência do evento é obrigatória.');
+        if (!$this->hasText($sequence)) {
+            $result->addError('sequence', 'A sequência do evento é obrigatória.');
+            return;
         }
 
         if (!preg_match('/^\d+$/', $sequence)) {
-            throw new InvalidArgumentException('A sequência do evento deve conter apenas dígitos.');
+            $result->addError('sequence', 'A sequência do evento deve conter apenas dígitos.');
+            return;
         }
 
         if ((int) $sequence < 1) {
-            throw new InvalidArgumentException('A sequência do evento deve ser maior ou igual a 1.');
+            $result->addError('sequence', 'A sequência do evento deve ser maior ou igual a 1.');
         }
     }
 
-    private function validateEventDate(?string $eventDate): void
+    private function validateEventDate(?string $eventDate, ValidationResult $result): void
     {
-        if ($eventDate === null || $eventDate === '') {
-            throw new InvalidArgumentException('A data/hora do evento é obrigatória.');
+        if (!$this->hasText($eventDate)) {
+            $result->addError('eventDate', 'A data/hora do evento é obrigatória.');
+            return;
         }
 
         try {
             new \DateTimeImmutable($eventDate);
         } catch (\Throwable) {
-            throw new InvalidArgumentException('A data/hora do evento é inválida.');
+            $result->addError('eventDate', 'A data/hora do evento é inválida.');
         }
     }
 
-    private function validateAuthorDocument(?string $authorDocument): void
+    private function validateAuthorDocument(?string $authorDocument, ValidationResult $result): void
     {
-        if ($authorDocument === null || $authorDocument === '') {
-            throw new InvalidArgumentException('O documento do autor do evento é obrigatório.');
+        if (!$this->hasText($authorDocument)) {
+            $result->addError('authorDocument', 'O documento do autor do evento é obrigatório.');
+            return;
         }
 
         if (!preg_match('/^\d{11}$|^\d{14}$/', $authorDocument)) {
-            throw new InvalidArgumentException('O documento do autor do evento deve conter 11 ou 14 dígitos.');
+            $result->addError('authorDocument', 'O documento do autor do evento deve conter 11 ou 14 dígitos.');
         }
     }
 
-    private function validateJustification(?string $justification): void
+    private function validateJustification(?string $justification, ValidationResult $result): void
     {
-        if ($justification === null || $justification === '') {
-            throw new InvalidArgumentException('A justificativa do evento é obrigatória.');
+        if (!$this->hasText($justification)) {
+            $result->addError('justification', 'A justificativa do evento é obrigatória.');
+            return;
         }
 
-        $length = mb_strlen($justification);
+        $length = mb_strlen(trim($justification));
 
         if ($length < 15) {
-            throw new InvalidArgumentException('A justificativa do evento deve ter no mínimo 15 caracteres.');
+            $result->addError('justification', 'A justificativa do evento deve ter no mínimo 15 caracteres.');
         }
 
         if ($length > 255) {
-            throw new InvalidArgumentException('A justificativa do evento deve ter no máximo 255 caracteres.');
+            $result->addError('justification', 'A justificativa do evento deve ter no máximo 255 caracteres.');
         }
+    }
+
+    private function hasText(?string $value): bool
+    {
+        return $value !== null && trim($value) !== '';
     }
 }

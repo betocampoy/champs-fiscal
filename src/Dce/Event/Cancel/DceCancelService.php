@@ -54,9 +54,9 @@ final class DceCancelService
         try {
             $this->assertInput($payload);
             $this->assertCertificate($certificate);
-
+            
             $data = $this->dataFactory->create($payload);
-
+            
             $xml = $this->xmlBuilder->build($data);
 
             $privateKeyPem = $certificate->getPrivateKey();

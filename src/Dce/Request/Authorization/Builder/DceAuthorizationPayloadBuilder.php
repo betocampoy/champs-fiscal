@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Builder;
 
+use BetoCampoy\Champs\Fiscal\Dce\Enum\DceIssuerType;
 use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceAdditionalInfoRequest;
 use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceAuthorizationRequest;
 use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceAutXmlRequest;
@@ -12,16 +13,14 @@ use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceDestRequest;
 use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceDetRequest;
 use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceEmitAddressRequest;
 use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceEmitRequest;
+use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceEmpEmisPropRequest;
 use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceIdeRequest;
+use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceMarketplaceRequest;
 use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceProdRequest;
 use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceTotalRequest;
-use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceTransportRequest;
 use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceTranspRequest;
+use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceTransportRequest;
 
-/**
- * Constrói o payload técnico da autorização da DC-e
- * a partir da request semântica.
- */
 final class DceAuthorizationPayloadBuilder
 {
     public function build(DceAuthorizationRequest $request): DceAuthorizationPayload
@@ -38,11 +37,7 @@ final class DceAuthorizationPayloadBuilder
             'transp' => $this->buildTransport($request->getTransport()),
         ];
 
-        $issuerType = $request->getIde()?->getIssuerType();
-
-        if ($issuerType === '3') {
-            $payload['Transportadora'] = $this->buildTransportadora($request->getTransp());
-        }
+        $this->appendIssuerSpecificGroup($payload, $request);
 
         if ($request->getAuthorizedXmlViewers() !== []) {
             $payload['autXML'] = array_map(
@@ -56,6 +51,33 @@ final class DceAuthorizationPayloadBuilder
         }
 
         return new DceAuthorizationPayload($this->filterNulls($payload));
+    }
+
+    private function appendIssuerSpecificGroup(array &$payload, DceAuthorizationRequest $request): void
+    {
+        $rawIssuerType = $request->getIde()?->getIssuerType();
+
+        if ($rawIssuerType === null || $rawIssuerType === '') {
+            return;
+        }
+
+        try {
+            $issuerType = DceIssuerType::from((int) $rawIssuerType);
+        } catch (\ValueError) {
+            return;
+        }
+
+        match ($issuerType) {
+            DceIssuerType::FISCO => null,
+
+            DceIssuerType::MARKETPLACE =>
+            $payload['Marketplace'] = $this->buildMarketplace($request->getMarketplace()),
+
+            DceIssuerType::OWN => null,
+
+            DceIssuerType::CARRIER =>
+            $payload['Transportadora'] = $this->buildTransportadora($request->getTransp()),
+        };
     }
 
     private function buildIde(?DceIdeRequest $ide): array
@@ -91,11 +113,11 @@ final class DceAuthorizationPayloadBuilder
             'enderEmit' => $this->buildEmitAddress($emit->getAddress()),
         ];
 
-        if ($emit->getCnpj() !== null && $emit->getCnpj() !== '') {
+        if ($this->hasText($emit->getCnpj())) {
             $payload['CNPJ'] = $emit->getCnpj();
-        } elseif ($emit->getCpf() !== null && $emit->getCpf() !== '') {
+        } elseif ($this->hasText($emit->getCpf())) {
             $payload['CPF'] = $emit->getCpf();
-        } elseif ($emit->getOther() !== null && $emit->getOther() !== '') {
+        } elseif ($this->hasText($emit->getOther())) {
             $payload['idOutros'] = $emit->getOther();
         }
 
@@ -123,6 +145,29 @@ final class DceAuthorizationPayloadBuilder
         ]);
     }
 
+    private function buildMarketplace(?DceMarketplaceRequest $marketplace): array
+    {
+        if ($marketplace === null) {
+            return [];
+        }
+
+        return $this->filterNulls([
+            'CNPJ' => $marketplace->getCnpj(),
+            'xNome' => $marketplace->getName(),
+            'Site' => $marketplace->getSite(),
+        ]);
+    }
+
+//    private function buildEmpEmisProp(
+//        ?DceEmpEmisPropRequest $empEmisProp,
+//        ?DceEmitRequest $emit
+//    ): array {
+//        return $this->filterNulls([
+//            'CNPJ' => $empEmisProp?->getCnpj() ?: $emit?->getCnpj(),
+//            'xNome' => $empEmisProp?->getName() ?: $emit?->getName(),
+//        ]);
+//    }
+
     private function buildTransportadora(?DceTranspRequest $transp): array
     {
         if ($transp === null) {
@@ -133,12 +178,10 @@ final class DceAuthorizationPayloadBuilder
             'xNome' => $transp->getName(),
         ];
 
-        if ($transp->getCnpj() !== null && $transp->getCnpj() !== '') {
+        if ($this->hasText($transp->getCnpj())) {
             $payload['CNPJ'] = $transp->getCnpj();
-        } elseif ($transp->getCpf() !== null && $transp->getCpf() !== '') {
+        } elseif ($this->hasText($transp->getCpf())) {
             $payload['CPF'] = $transp->getCpf();
-        } elseif ($transp->getOtherId() !== null && $transp->getOtherId() !== '') {
-            $payload['idOutros'] = $transp->getOtherId();
         }
 
         return $this->filterNulls($payload);
@@ -155,11 +198,11 @@ final class DceAuthorizationPayloadBuilder
             'enderDest' => $this->buildDestAddress($dest->getAddress()),
         ];
 
-        if ($dest->getCnpj() !== null && $dest->getCnpj() !== '') {
+        if ($this->hasText($dest->getCnpj())) {
             $payload['CNPJ'] = $dest->getCnpj();
-        } elseif ($dest->getCpf() !== null && $dest->getCpf() !== '') {
+        } elseif ($this->hasText($dest->getCpf())) {
             $payload['CPF'] = $dest->getCpf();
-        } elseif ($dest->getOtherId() !== null && $dest->getOtherId() !== '') {
+        } elseif ($this->hasText($dest->getOtherId())) {
             $payload['idOutros'] = $dest->getOtherId();
         }
 
@@ -192,9 +235,9 @@ final class DceAuthorizationPayloadBuilder
     {
         $payload = [];
 
-        if ($viewer->getCnpj() !== null && $viewer->getCnpj() !== '') {
+        if ($this->hasText($viewer->getCnpj())) {
             $payload['CNPJ'] = $viewer->getCnpj();
-        } elseif ($viewer->getCpf() !== null && $viewer->getCpf() !== '') {
+        } elseif ($this->hasText($viewer->getCpf())) {
             $payload['CPF'] = $viewer->getCpf();
         }
 
@@ -210,7 +253,7 @@ final class DceAuthorizationPayloadBuilder
             'prod' => $this->buildProd($detail->getProd()),
         ];
 
-        if ($detail->getAdditionalInfo() !== null && $detail->getAdditionalInfo() !== '') {
+        if ($this->hasText($detail->getAdditionalInfo())) {
             $payload['infAdProd'] = $detail->getAdditionalInfo();
         }
 
@@ -252,6 +295,7 @@ final class DceAuthorizationPayloadBuilder
         return $this->filterNulls([
             'modFrete' => $transport->getFreightMode(),
             'vFrete' => $transport->getFreightValue(),
+            'CNPJTransp' => $transport->getCarrierCnpj(),
         ]);
     }
 
@@ -278,5 +322,10 @@ final class DceAuthorizationPayloadBuilder
             $data,
             static fn ($value) => $value !== null && $value !== []
         );
+    }
+
+    private function hasText(?string $value): bool
+    {
+        return $value !== null && trim($value) !== '';
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Validator;
 
 use BetoCampoy\Champs\Fiscal\Brazil\UfCodeMap;
+use BetoCampoy\Champs\Fiscal\Dce\Enum\DceIssuerType;
 use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceAdditionalInfoRequest;
 use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceAuthorizationRequest;
 use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceAutXmlRequest;
@@ -13,16 +14,15 @@ use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceDestRequest;
 use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceDetRequest;
 use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceEmitAddressRequest;
 use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceEmitRequest;
+use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceEmpEmisPropRequest;
 use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceIdeRequest;
+use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceMarketplaceRequest;
 use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceProdRequest;
 use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceTotalRequest;
 use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceTranspRequest;
 use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Input\DceTransportRequest;
 use BetoCampoy\Champs\Fiscal\Validator\ValidationResult;
 
-/**
- * Validador da autorização da DC-e.
- */
 final class DceAuthorizationRequestValidator
 {
     public function validate(DceAuthorizationRequest $request): ValidationResult
@@ -67,7 +67,7 @@ final class DceAuthorizationRequestValidator
         }
 
         if ($request->getTransport() === null) {
-            $result->addError('transport', 'O grupo transp é obrigatório.');
+            $result->addError('transport', 'O grupo transport é obrigatório.');
         }
     }
 
@@ -116,8 +116,12 @@ final class DceAuthorizationRequestValidator
             $result->addError('ide.emissionType', 'O tipo de emissão deve ser 1 (normal) ou 9 (contingência offline).');
         }
 
-        if ($ide->getIssuerType() !== null && !in_array($ide->getIssuerType(), ['0', '1', '2', '3', '4'], true)) {
-            $result->addError('ide.issuerType', 'O tipo de emitente informado é inválido.');
+        if ($ide->getIssuerType() !== null) {
+            try {
+                DceIssuerType::from((int) $ide->getIssuerType());
+            } catch (\ValueError) {
+                $result->addError('ide.issuerType', 'O tipo de emitente informado é inválido.');
+            }
         }
     }
 
@@ -178,34 +182,147 @@ final class DceAuthorizationRequestValidator
         }
     }
 
-    private function validateIssuerSpecificGroup(DceAuthorizationRequest $request, ValidationResult $result): void
-    {
-        $issuerType = $request->getIde()?->getIssuerType();
-        $transp = $request->getTransp();
+    private function validateIssuerSpecificGroup(
+        DceAuthorizationRequest $request,
+        ValidationResult $result
+    ): void {
+        $rawIssuerType = $request->getIde()?->getIssuerType();
 
-        if ($issuerType === null) {
-            if ($transp !== null) {
-                $result->addError('transp', 'Não é possível validar o grupo Transportadora sem informar ide.issuerType.');
-                $this->validateTransp($transp, $result);
-            }
+        if ($rawIssuerType === null || $rawIssuerType === '') {
             return;
         }
 
-        if ($issuerType === '3') {
-            if ($transp === null) {
-                $result->addError('transp', 'Quando o tipo de emitente for 3, o grupo Transportadora é obrigatório.');
-                return;
-            }
-
-            $this->validateTransp($transp, $result);
+        try {
+            $issuerType = DceIssuerType::from((int) $rawIssuerType);
+        } catch (\ValueError) {
             return;
+        }
+
+        $marketplace = $request->getMarketplace();
+        $empEmisProp = $request->getEmpEmisProp();
+        $transp = $request->getTransp();
+
+        match ($issuerType) {
+            DceIssuerType::FISCO => $this->validateFiscoIssuerGroups($marketplace, $empEmisProp, $transp, $result),
+            DceIssuerType::MARKETPLACE => $this->validateMarketplaceIssuerGroups($marketplace, $empEmisProp, $transp, $result),
+            DceIssuerType::OWN => $this->validateEmpEmisPropIssuerGroups($marketplace, $empEmisProp, $transp, $result),
+            DceIssuerType::CARRIER => $this->validateTransportadoraIssuerGroups($marketplace, $empEmisProp, $transp, $result),
+        };
+    }
+
+    private function validateFiscoIssuerGroups(
+        ?DceMarketplaceRequest $marketplace,
+        ?DceEmpEmisPropRequest $empEmisProp,
+        ?DceTranspRequest $transp,
+        ValidationResult $result
+    ): void {
+        if ($marketplace !== null) {
+            $result->addError('marketplace', 'O grupo Marketplace não pode ser informado quando o tipo de emitente for Fisco.');
+        }
+
+        if ($empEmisProp !== null) {
+            $result->addError('empEmisProp', 'O grupo EmpEmisProp não pode ser informado quando o tipo de emitente for Fisco.');
         }
 
         if ($transp !== null) {
-            $result->addError('transp', 'O grupo Transportadora só pode ser informado quando o tipo de emitente for 3.');
-            $this->validateTransp($transp, $result);
+            $result->addError('transp', 'O grupo Transportadora não pode ser informado quando o tipo de emitente for Fisco.');
         }
     }
+
+    private function validateMarketplaceIssuerGroups(
+        ?DceMarketplaceRequest $marketplace,
+        ?DceEmpEmisPropRequest $empEmisProp,
+        ?DceTranspRequest $transp,
+        ValidationResult $result
+    ): void {
+        if ($marketplace === null) {
+            $result->addError('marketplace', 'Quando o tipo de emitente for Marketplace, o grupo Marketplace é obrigatório.');
+        } else {
+            $this->validateMarketplace($marketplace, $result);
+        }
+
+        if ($empEmisProp !== null) {
+            $result->addError('empEmisProp', 'O grupo EmpEmisProp só pode ser informado quando o tipo de emitente for Emissor Próprio.');
+        }
+
+        if ($transp !== null) {
+            $result->addError('transp', 'O grupo Transportadora só pode ser informado quando o tipo de emitente for Transportadora.');
+        }
+    }
+
+    private function validateEmpEmisPropIssuerGroups(
+        ?DceMarketplaceRequest $marketplace,
+        ?DceEmpEmisPropRequest $empEmisProp,
+        ?DceTranspRequest $transp,
+        ValidationResult $result
+    ): void {
+        if ($marketplace !== null) {
+            $result->addError('marketplace', 'O grupo Marketplace só pode ser informado quando o tipo de emitente for Marketplace.');
+        }
+
+        if ($empEmisProp !== null) {
+            $result->addError('empEmisProp', 'O grupo EmpEmisProp não deve ser informado no XML da DC-e para Emissor Próprio.');
+        }
+
+        if ($transp !== null) {
+            $result->addError('transp', 'O grupo Transportadora só pode ser informado quando o tipo de emitente for Transportadora.');
+        }
+    }
+
+//    private function validateEmpEmisPropIssuerGroups(
+//        ?DceMarketplaceRequest $marketplace,
+//        ?DceEmpEmisPropRequest $empEmisProp,
+//        ?DceTranspRequest $transp,
+//        ValidationResult $result
+//    ): void {
+//        if ($empEmisProp === null) {
+//            $result->addError('empEmisProp', 'Quando o tipo de emitente for Emissor Próprio, o grupo EmpEmisProp é obrigatório.');
+//        } else {
+//            $this->validateEmpEmisProp($empEmisProp, $result);
+//        }
+//
+//        if ($marketplace !== null) {
+//            $result->addError('marketplace', 'O grupo Marketplace só pode ser informado quando o tipo de emitente for Marketplace.');
+//        }
+//
+//        if ($transp !== null) {
+//            $result->addError('transp', 'O grupo Transportadora só pode ser informado quando o tipo de emitente for Transportadora.');
+//        }
+//    }
+
+    private function validateTransportadoraIssuerGroups(
+        ?DceMarketplaceRequest $marketplace,
+        ?DceEmpEmisPropRequest $empEmisProp,
+        ?DceTranspRequest $transp,
+        ValidationResult $result
+    ): void {
+        if ($transp === null) {
+            $result->addError('transp', 'Quando o tipo de emitente for Transportadora, o grupo Transportadora é obrigatório.');
+        } else {
+            $this->validateTransp($transp, $result);
+        }
+
+        if ($marketplace !== null) {
+            $result->addError('marketplace', 'O grupo Marketplace só pode ser informado quando o tipo de emitente for Marketplace.');
+        }
+
+        if ($empEmisProp !== null) {
+            $result->addError('empEmisProp', 'O grupo EmpEmisProp só pode ser informado quando o tipo de emitente for Emissor Próprio.');
+        }
+    }
+
+    private function validateMarketplace(DceMarketplaceRequest $marketplace, ValidationResult $result): void
+    {
+        $this->requireNotBlank($marketplace->getCnpj(), 'marketplace.cnpj', 'O CNPJ do Marketplace é obrigatório.', $result);
+        $this->requireNotBlank($marketplace->getName(), 'marketplace.name', 'O nome do Marketplace é obrigatório.', $result);
+        $this->requireNotBlank($marketplace->getSite(), 'marketplace.site', 'O site do Marketplace é obrigatório.', $result);
+    }
+
+//    private function validateEmpEmisProp(DceEmpEmisPropRequest $empEmisProp, ValidationResult $result): void
+//    {
+//        $this->requireNotBlank($empEmisProp->getCnpj(), 'empEmisProp.cnpj', 'O CNPJ da empresa de emissão própria é obrigatório.', $result);
+//        $this->requireNotBlank($empEmisProp->getName(), 'empEmisProp.name', 'O nome da empresa de emissão própria é obrigatório.', $result);
+//    }
 
     private function validateTransp(?DceTranspRequest $transp, ValidationResult $result): void
     {
@@ -331,7 +448,6 @@ final class DceAuthorizationRequestValidator
     private function validateProd(DceProdRequest $prod, string $base, ValidationResult $result): void
     {
         $this->requireNotBlank($prod->getName(), "$base.prod.name", 'A descrição do produto é obrigatória.', $result);
-//        $this->requireNotBlank($prod->getNcm(), "$base.prod.ncm", 'O NCM é obrigatório.', $result);
         $this->requireNotBlank($prod->getCommercialQuantity(), "$base.prod.commercialQuantity", 'A quantidade comercial é obrigatória.', $result);
         $this->requireNotBlank($prod->getUnitValue(), "$base.prod.unitValue", 'O valor unitário é obrigatório.', $result);
         $this->requireNotBlank($prod->getTotalValue(), "$base.prod.totalValue", 'O valor total do item é obrigatório.', $result);
@@ -351,9 +467,6 @@ final class DceAuthorizationRequestValidator
         if ($transport === null) {
             return;
         }
-
-//        $this->requireNotBlank($transport->getFreightMode(), 'transport.freightMode', 'A modalidade do frete é obrigatória.', $result);
-//        $this->requireNotBlank($transport->getFreightValue(), 'transport.freightValue', 'O valor do frete é obrigatório.', $result);
     }
 
     private function validateAdditionalInfo(?DceAdditionalInfoRequest $additionalInfo, ValidationResult $result): void

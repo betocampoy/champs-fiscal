@@ -38,9 +38,9 @@ final class DceEventPayloadBuilder
             'nProt' => $request->getProtocolNumber(),
 
             // 🏢 Emitente (usado no XML dependendo do tpEmit)
-            'cnpjUsEmit' => $request->getIssuerCnpj(),
-            'cpfUsEmit' => $request->getIssuerCpf(),
-            'idOutrosUsEmit' => $request->getIssuerOtherId(),
+            'cnpjUsEmit' => $request->getEmitCnpj(),
+            'cpfUsEmit' => $request->getEmitCpf(),
+            'idOutrosUsEmit' => $request->getEmitOtherId(),
         ];
 
         return new DceEventPayload($this->filterNulls($payload));

@@ -20,9 +20,9 @@ final class DceEventRequest
     private ?string $tpEmit = null;
     private ?string $protocolNumber = null;
     private ?string $eventDescription = null;
-    private ?string $issuerCnpj = null;
-    private ?string $issuerCpf = null;
-    private ?string $issuerOtherId = null;
+    private ?string $emitCnpj = null;
+    private ?string $emitCpf = null;
+    private ?string $emitOtherId = null;
 
     public function getAccessKey(): ?string
     {
@@ -178,36 +178,36 @@ final class DceEventRequest
         return $this;
     }
 
-    public function getIssuerCnpj(): ?string
+    public function getEmitCnpj(): ?string
     {
-        return $this->issuerCnpj;
+        return $this->emitCnpj;
     }
 
-    public function setIssuerCnpj(?string $issuerCnpj): self
+    public function setEmitCnpj(?string $emitCnpj): self
     {
-        $this->issuerCnpj = $issuerCnpj;
+        $this->emitCnpj = $emitCnpj;
         return $this;
     }
 
-    public function getIssuerCpf(): ?string
+    public function getEmitCpf(): ?string
     {
-        return $this->issuerCpf;
+        return $this->emitCpf;
     }
 
-    public function setIssuerCpf(?string $issuerCpf): self
+    public function setEmitCpf(?string $emitCpf): self
     {
-        $this->issuerCpf = $issuerCpf;
+        $this->emitCpf = $emitCpf;
         return $this;
     }
 
-    public function getIssuerOtherId(): ?string
+    public function getEmitOtherId(): ?string
     {
-        return $this->issuerOtherId;
+        return $this->emitOtherId;
     }
 
-    public function setIssuerOtherId(?string $issuerOtherId): self
+    public function setEmitOtherId(?string $emitOtherId): self
     {
-        $this->issuerOtherId = $issuerOtherId;
+        $this->emitOtherId = $emitOtherId;
         return $this;
     }
 }

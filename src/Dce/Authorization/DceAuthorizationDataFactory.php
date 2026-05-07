@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace BetoCampoy\Champs\Fiscal\Dce\Authorization;
 
+use BetoCampoy\Champs\Fiscal\Dce\Enum\DceIssuerType;
 use BetoCampoy\Champs\Fiscal\Dce\Request\Authorization\Builder\DceAuthorizationPayload;
 use DateTimeImmutable;
 use InvalidArgumentException;
@@ -25,13 +26,15 @@ final class DceAuthorizationDataFactory
         $dest = $payload->getDest();
         $det = $payload->getDet();
         $transp = $payload->getTransp();
+
+        $fisco = $payload->getFisco();
+        $marketplace = $payload->getMarketplace();
+        $empEmisProp = $payload->getEmpEmisProp();
         $transportadora = $payload->getTransportadora();
+
         $autXml = $payload->getAutXml();
         $infAdic = $payload->getInfAdic();
 
-        $fisco = $data['fisco'] ?? null;
-        $marketplace = $data['marketplace'] ?? null;
-        $emissaoPropria = $data['emissaoPropria'] ?? null;
         $infDec = $data['infDec'] ?? [];
         $infSolicDCe = $data['infSolicDCe'] ?? [];
 
@@ -42,10 +45,10 @@ final class DceAuthorizationDataFactory
 
         $actorCnpj = $this->resolveActorCnpj(
             tpEmit: $tpEmit,
-            fisco: is_array($fisco) ? $fisco : null,
-            marketplace: is_array($marketplace) ? $marketplace : null,
+            emit: $emit,
+            fisco: $fisco !== [] ? $fisco : null,
+            marketplace: $marketplace !== [] ? $marketplace : null,
             transportadora: $transportadora !== [] ? $transportadora : null,
-            emissaoPropria: is_array($emissaoPropria) ? $emissaoPropria : null,
         );
 
         $accessKey = $this->accessKeyGenerator->generate(
@@ -109,10 +112,10 @@ final class DceAuthorizationDataFactory
             emitNome: trim((string) ($emit['xNome'] ?? '')),
             emitEndereco: $this->normalizeAddress($emit['enderEmit'] ?? []),
 
-            fisco: $this->normalizeFisco(is_array($fisco) ? $fisco : null),
-            marketplace: $this->normalizeMarketplace(is_array($marketplace) ? $marketplace : null),
+            fisco: $this->normalizeFisco($fisco !== [] ? $fisco : null),
+            marketplace: $this->normalizeMarketplace($marketplace !== [] ? $marketplace : null),
             transportadoraEmissora: $this->normalizeTransportadoraEmissora($transportadora !== [] ? $transportadora : null),
-            emissaoPropria: $this->normalizeEmissaoPropria(is_array($emissaoPropria) ? $emissaoPropria : null),
+            emissaoPropria: $this->normalizeEmpEmisProp($empEmisProp !== [] ? $empEmisProp : null),
 
             destCnpj: $this->digitsOrNull($dest['CNPJ'] ?? null),
             destCpf: $this->digitsOrNull($dest['CPF'] ?? null),
@@ -152,21 +155,27 @@ final class DceAuthorizationDataFactory
      * @param array<string, mixed>|null $fisco
      * @param array<string, mixed>|null $marketplace
      * @param array<string, mixed>|null $transportadora
-     * @param array<string, mixed>|null $emissaoPropria
+     * @param array<string, mixed>|null $empEmisProp
      */
     private function resolveActorCnpj(
         int $tpEmit,
+        array $emit,
         ?array $fisco,
         ?array $marketplace,
         ?array $transportadora,
-        ?array $emissaoPropria,
     ): string {
-        return match ($tpEmit) {
-            0 => $this->requiredDigits($fisco['CNPJ'] ?? null, 'fisco.CNPJ'),
-            1 => $this->requiredDigits($marketplace['CNPJ'] ?? null, 'marketplace.CNPJ'),
-            2 => $this->requiredDigits($emissaoPropria['CNPJ'] ?? null, 'emissaoPropria.CNPJ'),
-            3 => $this->requiredDigits($transportadora['CNPJ'] ?? null, 'Transportadora.CNPJ'),
-            default => throw new InvalidArgumentException('tpEmit inválido.'),
+        return match (DceIssuerType::from($tpEmit)) {
+            DceIssuerType::FISCO =>
+            $this->requiredDigits($fisco['CNPJ'] ?? null, 'Fisco.CNPJ'),
+
+            DceIssuerType::MARKETPLACE =>
+            $this->requiredDigits($marketplace['CNPJ'] ?? null, 'Marketplace.CNPJ'),
+
+            DceIssuerType::OWN =>
+            $this->requiredDigits($emit['CNPJ'] ?? null, 'emit.CNPJ'),
+
+            DceIssuerType::CARRIER =>
+            $this->requiredDigits($transportadora['CNPJ'] ?? null, 'Transportadora.CNPJ'),
         };
     }
 
@@ -284,7 +293,7 @@ final class DceAuthorizationDataFactory
     /**
      * @param array<string, mixed>|null $data
      */
-    private function normalizeEmissaoPropria(?array $data): ?array
+    private function normalizeEmpEmisProp(?array $data): ?array
     {
         if (!$data) {
             return null;

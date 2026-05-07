@@ -35,22 +35,22 @@ final class DceEventRequestNormalizer
 
     private function normalizeAuthorDocument(DceEventRequest $request): void
     {
-        if ($request->getAuthorDocument()) {
+//        if ($request->getAuthorDocument()) {
+//            return;
+//        }
+
+        if ($request->getEmitCnpj()) {
+            $request->setEmitCnpj($request->getEmitCnpj());
             return;
         }
 
-        if ($request->getIssuerCnpj()) {
-            $request->setAuthorDocument($request->getIssuerCnpj());
+        if ($request->getEmitCpf()) {
+            $request->setEmitCpf($request->getEmitCpf());
             return;
         }
 
-        if ($request->getIssuerCpf()) {
-            $request->setAuthorDocument($request->getIssuerCpf());
-            return;
-        }
-
-        if ($request->getIssuerOtherId()) {
-            $request->setAuthorDocument($request->getIssuerOtherId());
+        if ($request->getEmitOtherId()) {
+            $request->setEmitOtherId($request->getEmitOtherId());
         }
     }
 

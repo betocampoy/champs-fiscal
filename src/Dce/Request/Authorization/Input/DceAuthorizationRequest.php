@@ -40,6 +40,9 @@ final class DceAuthorizationRequest
      */
     private ?DceTranspRequest $transp = null;
 
+    private ?DceMarketplaceRequest $marketplace = null;
+    private ?DceEmpEmisPropRequest $empEmisProp = null;
+
     /**
      * Grupo dest
      * Destinatário da DC-e.
@@ -115,6 +118,28 @@ final class DceAuthorizationRequest
     public function setTransp(?DceTranspRequest $transp): self
     {
         $this->transp = $transp;
+        return $this;
+    }
+
+    public function getMarketplace(): ?DceMarketplaceRequest
+    {
+        return $this->marketplace;
+    }
+
+    public function setMarketplace(?DceMarketplaceRequest $marketplace): self
+    {
+        $this->marketplace = $marketplace;
+        return $this;
+    }
+
+    public function getEmpEmisProp(): ?DceEmpEmisPropRequest
+    {
+        return $this->empEmisProp;
+    }
+
+    public function setEmpEmisProp(?DceEmpEmisPropRequest $empEmisProp): self
+    {
+        $this->empEmisProp = $empEmisProp;
         return $this;
     }
 
