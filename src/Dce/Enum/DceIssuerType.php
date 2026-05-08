@@ -2,6 +2,9 @@
 
 namespace BetoCampoy\Champs\Fiscal\Dce\Enum;
 
+/**
+ * EMUN para padronizar os tipos de ISSUERS
+ */
 enum DceIssuerType: int
 {
     case FISCO = 0;
