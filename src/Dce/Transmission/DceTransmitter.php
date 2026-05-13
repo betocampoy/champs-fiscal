@@ -25,7 +25,7 @@ final class DceTransmitter implements DocumentTransmitterInterface
     ) {
     }
 
-    public static function createForEnvironment(string $environment = 'homolog'): self
+    public static function createForEnvironment(string $environment = '2'): self
     {
         return new self(
             transport: new SoapTransport(),

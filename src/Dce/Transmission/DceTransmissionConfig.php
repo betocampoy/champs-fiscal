@@ -5,7 +5,7 @@ namespace BetoCampoy\Champs\Fiscal\Dce\Transmission;
 final class DceTransmissionConfig
 {
     public function __construct(
-        private readonly string $environment, // homolog | prod
+        private readonly string $environment, // 1=prod | 2=homolog
     ) {}
 
     public function getEnvironment(): string
@@ -15,7 +15,8 @@ final class DceTransmissionConfig
 
     public function isProduction(): bool
     {
-        return $this->environment === 'prod';
+
+        return (int)$this->environment === (int)1;
     }
 
     public function getAuthorizationWsdl(): string
