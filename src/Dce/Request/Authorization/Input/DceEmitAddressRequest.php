@@ -159,7 +159,7 @@ final class DceEmitAddressRequest
 
     public function getZipCode(): ?string
     {
-        return $this->zipCode;
+        return str_pad($this->zipCode, 8, '0', STR_PAD_LEFT);
     }
 
     public function setZipCode(?string $zipCode): self
