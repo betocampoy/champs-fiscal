@@ -60,13 +60,13 @@ final class DceCancelService
             $xml = $this->xmlBuilder->build($data);
 
             $privateKeyPem = $certificate->getPrivateKey();
-            $certificatePem = $certificate->getCertificate();
+            $leafCertPem   = $certificate->getCertificate();
 
             $signedXml = $this->signer->sign(
                 xml: $xml,
                 referenceId: $data->getSignatureReferenceId(),
                 privateKeyPem: $privateKeyPem,
-                certificatePem: $certificatePem,
+                certificatePem: $leafCertPem,
                 config: DceSignatureConfigFactory::makeForCancelEvent(),
             );
 
@@ -78,8 +78,14 @@ final class DceCancelService
                 operation: DocumentOperation::CANCEL,
             );
 
+            $extraCerts   = $certificate->getExtraCertificates();
+            $chainCertPem = $leafCertPem;
+            if (!empty($extraCerts)) {
+                $chainCertPem .= "\n" . implode("\n", $extraCerts);
+            }
+
             $soapCredentials = new SoapTlsPemCredentials(
-                certificatePem: $certificatePem,
+                certificatePem: $chainCertPem,
                 privateKeyPem: $privateKeyPem,
             );
 

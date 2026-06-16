@@ -67,14 +67,14 @@ final class DceAuthorizationService
 
             $xml = $this->xmlBuilder->build($data);
 
-            $privateKeyPem = $certificate->getPrivateKey();
-            $certificatePem = $certificate->getCertificate();
+            $privateKeyPem  = $certificate->getPrivateKey();
+            $leafCertPem    = $certificate->getCertificate();
 
             $signedXml = $this->signer->sign(
                 xml: $xml,
                 referenceId: $data->getSignatureReferenceId(),
                 privateKeyPem: $privateKeyPem,
-                certificatePem: $certificatePem,
+                certificatePem: $leafCertPem,
                 config: DceSignatureConfigFactory::makeForAuthorization(),
             );
 
@@ -86,8 +86,17 @@ final class DceAuthorizationService
                 operation: DocumentOperation::SEND,
             );
 
+            // mTLS exige a cadeia completa (leaf + intermediárias) no local_cert.
+            // Sem as intermediárias, servidores que não têm a CA em cache retornam
+            // "tlsv1 alert unknown ca" e encerram o handshake.
+            $extraCerts  = $certificate->getExtraCertificates();
+            $chainCertPem = $leafCertPem;
+            if (!empty($extraCerts)) {
+                $chainCertPem .= "\n" . implode("\n", $extraCerts);
+            }
+
             $soapCredentials = new SoapTlsPemCredentials(
-                certificatePem: $certificatePem,
+                certificatePem: $chainCertPem,
                 privateKeyPem: $privateKeyPem,
             );
 
