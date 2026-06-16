@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>DACE Resumida 100x75</title>
+    <style>
+        @page { size: 100mm 75mm; margin: 1.8mm; }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; }
+        body { font-family: DejaVu Sans, sans-serif; font-size: 6.3px; color: #000; line-height: 1.02; }
+
+        .page { width: 100%; border: 1px solid #000; padding: 2px 3px; page-break-inside: avoid; }
+
+        .notice { text-align: center; font-weight: bold; font-size: 6.4px; margin-bottom: 1px; line-height: 1.05; }
+        .title  { text-align: center; font-weight: bold; font-size: 7.1px; line-height: 1.05; margin-bottom: 1px; text-transform: uppercase; }
+
+        .center-line  { text-align: center; margin-bottom: 0.5px; line-height: 1.03; }
+        .label { font-weight: bold; text-transform: uppercase; }
+
+        .section       { margin-top: 2px; text-align: center; }
+        .section .line { margin-bottom: 0.4px; line-height: 1.03; }
+
+        .bottom    { width: 100%; border-collapse: collapse; margin-top: 2px; }
+        .bottom td { vertical-align: top; padding: 0; }
+        .qr-col    { width: 25%; text-align: left; padding-right: 3px; }
+        .qr-box    { text-align: center; padding-top: 1px; }
+        .qr-box img { width: 52px; height: 52px; max-width: 100%; max-height: 100%; }
+        .legal-col { width: 75%; font-size: 5.55px; line-height: 1.12; text-align: justify; }
+
+        .access-key-title { margin-top: 2px; text-align: center; font-weight: bold; font-size: 6.6px; line-height: 1.03; }
+        .access-key-value { text-align: center; font-weight: bold; font-size: 6.2px; line-height: 1.08; word-spacing: 0.5px; margin-top: 0.5px; }
+
+        {% block extra_styles %}{% endblock %}
+    </style>
+</head>
+<body>
+<div class="page">
+
+    {% if dace.document.isHomologation %}
+        <div class="notice">EMITIDA EM HOMOLOGAÇÃO</div>
+    {% endif %}
+    {% if dace.document.hasContingencyMessage %}
+        <div class="notice">{{ dace.document.contingencyMessage }}</div>
+    {% endif %}
+
+    {% block logo %}{% endblock %}
+
+    <div class="title">DACE RESUMIDA - DECLARAÇÃO AUXILIAR DE CONTEÚDO ELETRÔNICA</div>
+
+    <div class="center-line">Nº {{ dace.document.numberFormatted }} SÉRIE {{ dace.document.series }}</div>
+    <div class="center-line"><span class="label">DATA DE EMISSÃO:</span> {{ dace.document.issueDateTime }}</div>
+    <div class="center-line">
+        <span class="label">PROTOCOLO DE AUTORIZAÇÃO:</span>
+        {{ dace.document.authorizationProtocol ?: '-' }}
+        {% if dace.document.hasContingencyMessage %}({{ dace.document.contingencyMessage }}){% endif %}
+    </div>
+    <div class="center-line"><span class="label">MODALIDADE DO TRANSPORTE:</span> {{ dace.document.transportModeLabel }}</div>
+
+    <div class="section">
+        <div class="line"><span class="label">CNPJ/CPF REMETENTE:</span> {{ dace.issuer.document ?: '-' }}</div>
+        <div class="line"><span class="label">NOME REMETENTE:</span> {{ dace.issuer.name ?: '-' }}</div>
+        <div class="line"><span class="label">CIDADE-UF REMETENTE:</span> {{ dace.issuer.cityUf ?: '-' }}</div>
+        <div class="line"><span class="label">ENDEREÇO REMETENTE:</span> {{ dace.issuer.fullAddress ?: '-' }}</div>
+    </div>
+
+    <div class="section">
+        <div class="line"><span class="label">CNPJ/CPF DESTINATÁRIO:</span> {{ dace.recipient.document ?: '-' }}</div>
+        <div class="line"><span class="label">NOME DESTINATÁRIO:</span> {{ dace.recipient.name ?: '-' }}</div>
+        <div class="line"><span class="label">CIDADE-UF DESTINATÁRIO:</span> {{ dace.recipient.cityUf ?: '-' }}</div>
+    </div>
+
+    {% if dace.hasResponsibleParty %}
+    <div class="section">
+        <div class="line"><span class="label">CNPJ TRANSPORTADOR:</span> {{ dace.responsibleParty.document ?: '-' }}</div>
+        <div class="line"><span class="label">NOME TRANSPORTADOR:</span> {{ dace.responsibleParty.name ?: '-' }}</div>
+    </div>
+    {% endif %}
+
+    <table class="bottom">
+        <tr>
+            <td class="qr-col">
+                <div class="qr-box">
+                    <img src="data:image/png;base64,{{ dace.assets.qrCodeImageBase64 }}" alt="QR-Code">
+                </div>
+            </td>
+            <td class="legal-col">
+                {% block legal_text %}{{ dace.additional.legalText|nl2br }}{% endblock %}
+            </td>
+        </tr>
+    </table>
+
+    <div class="access-key-title">Chave de Acesso DC-e</div>
+    <div class="access-key-value">{{ dace.document.accessKeyFormatted }}</div>
+
+    {% block footer %}{% endblock %}
+</div>
+</body>
+</html>

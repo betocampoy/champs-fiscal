@@ -1,0 +1,91 @@
+{#
+  DANFE simplificada — fragmento para embutir em relatório A4.
+  Sem <html>/<head>/<body>: o papel é controlado pelo template pai.
+#}
+
+<style>
+    .danfe-a4-page { width: 198mm; min-height: 120mm; margin: 5mm 0 0 0; border: 1px solid #000; padding: 7mm 8mm 8mm 8mm; box-sizing: border-box; font-family: DejaVu Sans, Arial, sans-serif; font-size: 11.5px; color: #000; line-height: 1.18; page-break-inside: avoid; text-align: left; }
+    .danfe-a4-page * { box-sizing: border-box; }
+    .danfe-a4-page .notice { text-align: center; font-weight: bold; font-size: 12px; margin-bottom: 2px; }
+    .danfe-a4-page .title  { text-align: center; font-weight: bold; font-size: 17px; line-height: 1.12; margin-bottom: 5px; text-transform: uppercase; }
+    .danfe-a4-page .center-line { text-align: center; margin-bottom: 2px; }
+    .danfe-a4-page .label { font-weight: bold; text-transform: uppercase; }
+    .danfe-a4-page .section { margin-top: 7px; padding-top: 5px; border-top: 1px solid #000; text-align: left; }
+    .danfe-a4-page .section-title { font-weight: bold; text-transform: uppercase; text-align: center; margin-bottom: 4px; font-size: 12.5px; }
+    .danfe-a4-page .section .line { margin-bottom: 2px; }
+    .danfe-a4-page .value-box { margin-top: 10px; border: 1px solid #000; padding: 4px 8px; text-align: center; }
+    .danfe-a4-page .value-label  { font-size: 10px; text-transform: uppercase; font-weight: bold; display: block; margin-bottom: 2px; }
+    .danfe-a4-page .value-amount { font-size: 18px; font-weight: bold; display: block; }
+    .danfe-a4-page .access-key-title { margin-top: 9px; text-align: center; font-weight: bold; font-size: 13px; }
+    .danfe-a4-page .access-key-value { text-align: center; font-weight: bold; font-size: 12px; line-height: 1.25; word-spacing: 2px; margin-top: 3px; }
+    {% block extra_styles %}{% endblock %}
+</style>
+
+<div class="danfe-a4-page">
+
+    {% if document.environment == '2' or document.environment == 'homolog' %}
+        <div class="notice">EMITIDA EM HOMOLOGAÇÃO — SEM VALOR FISCAL</div>
+    {% endif %}
+
+    {% block logo %}{% endblock %}
+
+    <div class="title">DANFE SIMPLIFICADA — NOTA FISCAL ELETRÔNICA</div>
+
+    <div class="center-line">Nº {{ nfe.number }}&nbsp;&nbsp; SÉRIE {{ nfe.series }}</div>
+    <div class="center-line"><span class="label">DATA DE EMISSÃO:</span> {{ nfe.issued_at|date('d/m/Y H:i') }}</div>
+
+    <div class="section">
+        <div class="section-title">Emitente</div>
+        <div class="line"><span class="label">CNPJ EMITENTE:</span> {{ nfe.emit_document ?: '-' }}</div>
+        <div class="line"><span class="label">NOME EMITENTE:</span> {{ nfe.emit_name ?: '-' }}</div>
+        <div class="line">
+            <span class="label">ENDEREÇO:</span>
+            {{ nfe.emit_address_street ?: '-' }}, {{ nfe.emit_address_number ?: '' }}
+            {% if nfe.emit_address_complement %} – {{ nfe.emit_address_complement }}{% endif %}
+            — {{ nfe.emit_address_neighborhood ?: '' }}
+            — {{ nfe.emit_address_city ?: '' }}/{{ nfe.emit_address_state ?: '' }}
+            — CEP {{ nfe.emit_address_zipcode ?: '' }}
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Destinatário</div>
+        <div class="line"><span class="label">CNPJ/CPF DESTINATÁRIO:</span> {{ nfe.dest_document ?: '-' }}</div>
+        <div class="line"><span class="label">NOME DESTINATÁRIO:</span> {{ nfe.dest_name ?: '-' }}</div>
+        <div class="line">
+            <span class="label">ENDEREÇO:</span>
+            {{ nfe.dest_address_street ?: '-' }}, {{ nfe.dest_address_number ?: '' }}
+            {% if nfe.dest_address_complement %} – {{ nfe.dest_address_complement }}{% endif %}
+            — {{ nfe.dest_address_neighborhood ?: '' }}
+            — {{ nfe.dest_address_city ?: '' }}/{{ nfe.dest_address_state ?: '' }}
+            — CEP {{ nfe.dest_address_zipcode ?: '' }}
+        </div>
+    </div>
+
+    {% if nfe.transp_name %}
+    <div class="section">
+        <div class="section-title">Transportador</div>
+        <div class="line"><span class="label">RAZÃO SOCIAL:</span> {{ nfe.transp_name }}</div>
+        {% if nfe.transp_document %}
+        <div class="line"><span class="label">CNPJ/CPF:</span> {{ nfe.transp_document }}</div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="value-box">
+        <span class="value-label">Valor Total da NF-e</span>
+        <span class="value-amount">R$ {{ nfe.total_value|default(0)|number_format(2, ',', '.') }}</span>
+    </div>
+
+    <div class="access-key-title">Chave de Acesso NF-e</div>
+    <div class="access-key-value">
+        {% set k = accessKey|default('') %}
+        {% if k %}
+            {{ k|slice(0,4) }} {{ k|slice(4,4) }} {{ k|slice(8,4) }} {{ k|slice(12,4) }} {{ k|slice(16,4) }}
+            {{ k|slice(20,4) }} {{ k|slice(24,4) }} {{ k|slice(28,4) }} {{ k|slice(32,4) }} {{ k|slice(36,4) }}
+            {{ k|slice(40,4) }}
+        {% else %}-{% endif %}
+    </div>
+
+    {% block footer %}{% endblock %}
+</div>

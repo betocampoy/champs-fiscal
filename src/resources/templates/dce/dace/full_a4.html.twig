@@ -1,0 +1,536 @@
+{% set daces = daces|default(
+    dace is defined ? [dace] : []
+) %}
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>DACE Completa</title>
+
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 8mm;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: DejaVu Sans, sans-serif;
+            font-size: 10px;
+            color: #000;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        td, th {
+            border: 1px solid #000;
+            padding: 2px 4px;
+            vertical-align: top;
+        }
+
+        .no-border {
+            border: none !important;
+        }
+
+        .page {
+            width: 100%;
+        }
+
+        .notice {
+            border: 1px solid #000;
+            padding: 5px;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .dace-header {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0 0 2px 0;
+            page-break-inside: avoid;
+        }
+
+        .dace-header td {
+            border: 1px solid #000;
+            padding: 0;
+            vertical-align: top;
+        }
+
+        .header-left {
+            width: 28%;
+            text-align: center;
+            vertical-align: top;
+            padding: 6px 5px !important;
+        }
+
+        .header-right {
+            width: 72%;
+            padding: 0 !important;
+            vertical-align: top;
+        }
+
+        .doc-title {
+            font-size: 20px;
+            font-weight: bold;
+            line-height: 1;
+            margin-bottom: 2px;
+        }
+
+        .doc-subtitle {
+            font-size: 11px;
+            line-height: 1.1;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+
+        .doc-number {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .doc-series {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 18px;
+        }
+
+        .doc-sheet {
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .barcode-box {
+            text-align: center;
+            padding: 6px 6px 2px 6px;
+        }
+
+        .barcode-box img {
+            width: 92%;
+            height: 54px;
+        }
+
+        .access-key {
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            padding: 2px 4px 6px 4px;
+        }
+
+        .meta-cell {
+            padding: 0 !important;
+        }
+
+        .meta-inner {
+            padding: 2px 4px 4px 4px;
+            min-height: 42px;
+        }
+
+        .meta-label {
+            display: block;
+            font-size: 8px;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+
+        .meta-value {
+            display: block;
+            text-align: center;
+            font-size: 11px;
+            font-weight: bold;
+            line-height: 1.1;
+        }
+
+        .protocol-cell {
+            padding: 2px 4px 4px 4px !important;
+            text-align: center;
+        }
+
+        .protocol-label {
+            display: block;
+            font-size: 8px;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+
+        .protocol-value {
+            display: block;
+            font-size: 11px;
+            font-weight: bold;
+            line-height: 1.1;
+        }
+
+        .section-title {
+            background: #d9d9d9;
+            text-align: center;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 3px;
+        }
+
+        .field-label {
+            display: block;
+            font-size: 7px;
+            text-transform: uppercase;
+            line-height: 1;
+            margin-bottom: 2px;
+        }
+
+        .field-value {
+            display: block;
+            font-size: 11px;
+            font-weight: bold;
+            line-height: 1.1;
+        }
+
+        .field-value.center {
+            text-align: center;
+        }
+
+        .items-table th {
+            background: #efefef;
+            text-transform: uppercase;
+            font-size: 10px;
+            text-align: center;
+            padding: 3px;
+        }
+
+        .items-table td {
+            font-size: 10px;
+            padding: 3px 4px;
+        }
+
+        .items-table .col-item {
+            width: 10%;
+            text-align: center;
+        }
+
+        .items-table .col-description {
+            width: 52%;
+        }
+
+        .items-table .col-qty {
+            width: 18%;
+            text-align: center;
+        }
+
+        .items-table .col-value {
+            width: 20%;
+            text-align: center;
+        }
+
+        .total-row td {
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        .total-label {
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .additional-title {
+            background: #d9d9d9;
+            text-align: center;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 3px;
+        }
+
+        .additional-label {
+            display: block;
+            font-size: 7px;
+            text-transform: uppercase;
+            line-height: 1;
+            margin-bottom: 2px;
+        }
+
+        .additional-value {
+            display: block;
+            font-size: 10px;
+            line-height: 1.15;
+            min-height: 38px;
+        }
+
+        .bottom-table td {
+            padding: 0;
+        }
+
+        .qr-title,
+        .obs-title {
+            background: #d9d9d9;
+            text-align: center;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 3px;
+            border-bottom: 1px solid #000;
+        }
+
+        .qr-body {
+            text-align: center;
+            padding: 6px 4px;
+            height: 125px;
+        }
+
+        .qr-body img {
+            width: 92px;
+            height: 92px;
+        }
+
+        .obs-body {
+            padding: 6px;
+            font-size: 8px;
+            line-height: 1.2;
+            text-align: justify;
+            height: 125px;
+        }
+
+        .muted-small {
+            font-size: 8px;
+        }
+
+        {% block extra_styles %}{% endblock %}
+    </style>
+</head>
+<body>
+{% for dace in daces %}
+<div class="dace-page">
+    <div class="page">
+
+        {% if dace.document.isHomologation %}
+            <div class="notice">EMITIDA EM HOMOLOGAÇÃO</div>
+        {% endif %}
+
+        {% if dace.document.hasContingencyMessage %}
+            <div class="notice">{{ dace.document.contingencyMessage }}</div>
+        {% endif %}
+
+        <table class="dace-header avoid-break">
+            <tr>
+                <td class="header-left" rowspan="3">
+                    {% block logo %}{% endblock %}
+                    <div class="doc-title">DACE</div>
+                    <div class="doc-subtitle">
+                        DECLARAÇÃO AUXILIAR DE<br>
+                        CONTEÚDO ELETRÔNICA
+                    </div>
+
+                    <div class="doc-number">Nº {{ dace.document.numberFormatted }}</div>
+                    <div class="doc-series">SÉRIE {{ dace.document.series }}</div>
+                    <div class="doc-sheet">{{ dace.document.sheetLabel ?: 'FOLHA 01/01' }}</div>
+                </td>
+                <td class="header-right" colspan="2">
+                    <div class="barcode-box">
+                        <img
+                                src="data:image/png;base64,{{ dace.assets.barcodeImageBase64 }}"
+                                alt="Código de barras"
+                        >
+                    </div>
+                    <div class="access-key">{{ dace.document.accessKeyFormatted }}</div>
+                </td>
+            </tr>
+            <tr>
+                <td class="meta-block">
+                    <span class="meta-label">Data de emissão</span>
+                    <span class="meta-value">{{ dace.document.issueDateTime }}</span>
+                </td>
+                <td class="meta-block">
+                    <span class="meta-label">Modalidade do transporte</span>
+                    <span class="meta-value">{{ dace.document.transportModeLabel }}</span>
+                </td>
+            </tr>
+            <tr>
+                <td class="protocol-block" colspan="2">
+                    <span class="meta-label">Protocolo de autorização</span>
+                    <span class="meta-value">
+                        {{ dace.document.authorizationProtocol ?: '-' }}
+                        {% if dace.document.hasContingencyMessage %}
+                            ({{ dace.document.contingencyMessage }})
+                        {% endif %}
+                    </span>
+                </td>
+            </tr>
+        </table>
+
+        <table>
+            <tr>
+                <td colspan="2" class="section-title">Identificação do remetente (usuário emitente)</td>
+            </tr>
+            <tr>
+                <td style="width: 24%;">
+                    <span class="field-label">CNPJ/CPF remetente</span>
+                    <span class="field-value">{{ dace.issuer.document ?: '-' }}</span>
+                </td>
+                <td style="width: 76%;">
+                    <span class="field-label">Nome remetente</span>
+                    <span class="field-value">{{ dace.issuer.name }}</span>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <span class="field-label">Cidade-UF remetente</span>
+                    <span class="field-value">{{ dace.issuer.cityUf ?: '-' }}</span>
+                </td>
+                <td>
+                    <span class="field-label">Endereço remetente</span>
+                    <span class="field-value">{{ dace.issuer.fullAddress ?: '-' }}</span>
+                </td>
+            </tr>
+        </table>
+
+        <table>
+            <tr>
+                <td colspan="2" class="section-title">Identificação do destinatário</td>
+            </tr>
+            <tr>
+                <td style="width: 24%;">
+                    <span class="field-label">CNPJ/CPF destinatário</span>
+                    <span class="field-value">{{ dace.recipient.document ?: '-' }}</span>
+                </td>
+                <td style="width: 76%;">
+                    <span class="field-label">Nome destinatário</span>
+                    <span class="field-value">{{ dace.recipient.name }}</span>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <span class="field-label">Cidade-UF destinatário</span>
+                    <span class="field-value">{{ dace.recipient.cityUf ?: '-' }}</span>
+                </td>
+                <td>
+                    <span class="field-label">Endereço destinatário</span>
+                    <span class="field-value">{{ dace.recipient.fullAddress ?: '-' }}</span>
+                </td>
+            </tr>
+        </table>
+
+        <table>
+            <tr>
+                <td colspan="2" class="section-title">Identificação do fisco, marketplace ou transportadora</td>
+            </tr>
+            <tr>
+                <td style="width: 24%;">
+                    <span class="field-label">CNPJ Fisco / Market / Transp</span>
+                    <span class="field-value">
+                        {% if dace.hasResponsibleParty %}
+                            {{ dace.responsibleParty.document ?: '-' }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </span>
+                </td>
+                <td style="width: 76%;">
+                    <span class="field-label">Nome Fisco / Marketplace / Transportadora</span>
+                    <span class="field-value">
+                        {% if dace.hasResponsibleParty %}
+                            {{ dace.responsibleParty.name }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </span>
+                </td>
+            </tr>
+        </table>
+
+        <table class="items-table">
+            <tr>
+                <td colspan="4" class="section-title">Identificação dos bens ou mercadorias</td>
+            </tr>
+            <tr>
+                <th class="col-item">Item</th>
+                <th class="col-description">Descrição</th>
+                <th class="col-qty">Quantidade</th>
+                <th class="col-value">Valor</th>
+            </tr>
+
+            {% if dace.hasItems %}
+                {% for item in dace.items %}
+                    <tr>
+                        <td class="col-item">{{ item.itemNumber }}</td>
+                        <td class="col-description">{{ item.description }}</td>
+                        <td class="col-qty">{{ item.quantity }}</td>
+                        <td class="col-value">{{ item.amountFormatted }}</td>
+                    </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td class="col-item">1</td>
+                    <td class="col-description">-</td>
+                    <td class="col-qty">0</td>
+                    <td class="col-value">{{ dace.document.totalAmountFormatted }}</td>
+                </tr>
+            {% endif %}
+
+            <tr class="total-row">
+                <td colspan="3" class="total-label">Valor Total</td>
+                <td class="col-value">{{ dace.document.totalAmountFormatted }}</td>
+            </tr>
+        </table>
+
+        <table>
+            <tr>
+                <td colspan="2" class="additional-title">Dados adicionais</td>
+            </tr>
+            <tr>
+                <td style="width: 50%;">
+                    <span class="additional-label">Informações complementares</span>
+                    <span class="additional-value">
+                        {{ dace.additional.complementaryInformation ?: '-' }}
+                    </span>
+                </td>
+                <td style="width: 50%;">
+                    <span class="additional-label">Informações adicionais do fisco</span>
+                    <span class="additional-value">
+                        {{ dace.additional.taxInformation ?: '-' }}
+                    </span>
+                </td>
+            </tr>
+        </table>
+
+        <table class="bottom-table">
+            <tr>
+                <td style="width: 24%;">
+                    <div class="qr-title">QR-Code</div>
+                    <div class="qr-body">
+                        <img
+                                src="data:image/png;base64,{{ dace.assets.qrCodeImageBase64 }}"
+                                alt="QR-Code"
+                        >
+                    </div>
+                </td>
+                <td style="width: 76%;">
+                    <div class="obs-title">Observações</div>
+                    <div class="obs-body">
+                        {% block observations %}
+                            {% if dace.additional.hasObservations %}
+                                {{ dace.additional.observations|nl2br }}
+                                <br><br>
+                            {% endif %}
+
+                            {{ dace.additional.legalText|nl2br }}
+                        {% endblock %}
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        {% block footer %}{% endblock %}
+
+    </div>
+</div>
+{% endfor %}
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>DANFE Resumida</title>
+    <style>
+        @page { size: 100mm 150mm; margin: 2mm; }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; }
+        body { font-family: DejaVu Sans, sans-serif; font-size: 8.2px; color: #000; line-height: 1.08; }
+
+        .page { width: 100%; border: 1px solid #000; padding: 3px 5px; page-break-inside: avoid; }
+
+        .notice { text-align: center; font-weight: bold; font-size: 8px; margin-bottom: 2px; }
+        .title  { text-align: center; font-weight: bold; font-size: 10px; line-height: 1.1; margin-bottom: 1px; text-transform: uppercase; }
+
+        .center-line  { text-align: center; margin-bottom: 1px; }
+        .label { font-weight: bold; text-transform: uppercase; }
+
+        .section       { margin-top: 4px; text-align: center; }
+        .section .line { margin-bottom: 1px; }
+
+        .value-box { margin-top: 5px; border: 1px solid #000; padding: 2px 4px; text-align: center; }
+        .value-label { font-size: 7px; text-transform: uppercase; font-weight: bold; display: block; }
+        .value-amount { font-size: 13px; font-weight: bold; display: block; margin-top: 1px; }
+
+        .access-key-title { margin-top: 6px; text-align: center; font-weight: bold; font-size: 9px; }
+        .access-key-value { text-align: center; font-weight: bold; font-size: 8.4px; line-height: 1.15; word-spacing: 1px; margin-top: 1px; }
+
+        {% block extra_styles %}{% endblock %}
+    </style>
+</head>
+<body>
+<div class="page">
+
+    {% if document.environment == '2' or document.environment == 'homolog' %}
+        <div class="notice">EMITIDA EM HOMOLOGAÇÃO — SEM VALOR FISCAL</div>
+    {% endif %}
+
+    {% block logo %}{% endblock %}
+
+    <div class="title">DANFE SIMPLIFICADA — NOTA FISCAL ELETRÔNICA</div>
+
+    <div class="center-line">Nº {{ nfe.number }}&nbsp;&nbsp; SÉRIE {{ nfe.series }}</div>
+    <div class="center-line"><span class="label">DATA DE EMISSÃO:</span> {{ nfe.issued_at|date('d/m/Y H:i') }}</div>
+
+    <div class="section">
+        <div class="line"><span class="label">CNPJ EMITENTE:</span> {{ nfe.emit_document ?: '-' }}</div>
+        <div class="line"><span class="label">NOME EMITENTE:</span> {{ nfe.emit_name ?: '-' }}</div>
+        <div class="line"><span class="label">ENDEREÇO EMITENTE:</span>
+            {{ nfe.emit_address_street ?: '-' }}, {{ nfe.emit_address_number ?: '' }}
+            — {{ nfe.emit_address_city ?: '' }}/{{ nfe.emit_address_state ?: '' }}
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="line"><span class="label">CNPJ/CPF DESTINATÁRIO:</span> {{ nfe.dest_document ?: '-' }}</div>
+        <div class="line"><span class="label">NOME DESTINATÁRIO:</span> {{ nfe.dest_name ?: '-' }}</div>
+        <div class="line"><span class="label">ENDEREÇO DESTINATÁRIO:</span>
+            {{ nfe.dest_address_street ?: '-' }}, {{ nfe.dest_address_number ?: '' }}
+            — {{ nfe.dest_address_city ?: '' }}/{{ nfe.dest_address_state ?: '' }}
+        </div>
+        <div class="line"><span class="label">CEP:</span> {{ nfe.dest_address_zipcode ?: '-' }}</div>
+    </div>
+
+    {% if nfe.transp_name %}
+    <div class="section">
+        <div class="line"><span class="label">TRANSPORTADOR:</span> {{ nfe.transp_name }}</div>
+        {% if nfe.transp_document %}
+        <div class="line"><span class="label">CNPJ TRANSPORTADOR:</span> {{ nfe.transp_document }}</div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="value-box">
+        <span class="value-label">Valor Total da NF-e</span>
+        <span class="value-amount">R$ {{ nfe.total_value|default(0)|number_format(2, ',', '.') }}</span>
+    </div>
+
+    <div class="access-key-title">Chave de Acesso NF-e</div>
+    <div class="access-key-value">
+        {% set k = accessKey|default('') %}
+        {% if k %}
+            {{ k|slice(0,4) }} {{ k|slice(4,4) }} {{ k|slice(8,4) }} {{ k|slice(12,4) }} {{ k|slice(16,4) }}
+            {{ k|slice(20,4) }} {{ k|slice(24,4) }} {{ k|slice(28,4) }} {{ k|slice(32,4) }} {{ k|slice(36,4) }}
+            {{ k|slice(40,4) }}
+        {% else %}-{% endif %}
+    </div>
+
+    {% block footer %}{% endblock %}
+</div>
+</body>
+</html>
