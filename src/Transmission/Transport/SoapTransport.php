@@ -48,13 +48,27 @@ final class SoapTransport
                 'ssl' => $sslOptions,
             ]);
 
-            $client = new \SoapClient($wsdl, array_replace([
-                'trace' => true,
-                'exceptions' => true,
-                'cache_wsdl' => WSDL_CACHE_NONE,
-                'stream_context' => $streamContext,
-                'soap_version' => SOAP_1_2,
-            ], $soapOptions));
+            // PHP 8.x desabilita carregamento de entidades externas via libxml por padrão,
+            // impedindo SoapClient de buscar o WSDL via URL ("failed to load external entity").
+            // Solução: pré-buscar com file_get_contents + stream_context e usar arquivo local.
+            $wsdlContent = @file_get_contents($wsdl, false, $streamContext);
+            if ($wsdlContent === false || trim($wsdlContent) === '') {
+                throw new \RuntimeException("Falha ao carregar WSDL de '{$wsdl}'.");
+            }
+            $wsdlTempFile = tempnam(sys_get_temp_dir(), 'champs_wsdl_');
+            file_put_contents($wsdlTempFile, $wsdlContent);
+
+            try {
+                $client = new \SoapClient($wsdlTempFile, array_replace([
+                    'trace' => true,
+                    'exceptions' => true,
+                    'cache_wsdl' => WSDL_CACHE_NONE,
+                    'stream_context' => $streamContext,
+                    'soap_version' => SOAP_1_2,
+                ], $soapOptions));
+            } finally {
+                unlink($wsdlTempFile);
+            }
 
             try {
                 $result = $client->__soapCall($operation, $arguments);
