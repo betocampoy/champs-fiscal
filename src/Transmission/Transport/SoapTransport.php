@@ -50,16 +50,25 @@ final class SoapTransport
 
             // PHP 8.x desabilita carregamento de entidades externas via libxml por padrão,
             // impedindo SoapClient de buscar o WSDL via URL ("failed to load external entity").
-            // Solução: pré-buscar com file_get_contents + stream_context e usar arquivo local.
-            $wsdlContent = @file_get_contents($wsdl, false, $streamContext);
-            if ($wsdlContent === false || trim($wsdlContent) === '') {
-                throw new \RuntimeException("Falha ao carregar WSDL de '{$wsdl}'.");
+            // Quando o WSDL é um arquivo local, passa diretamente. Quando é URL, pré-busca
+            // com file_get_contents + stream_context e usa arquivo temporário local.
+            $wsdlIsLocal = file_exists($wsdl);
+
+            if (!$wsdlIsLocal) {
+                $wsdlContent = @file_get_contents($wsdl, false, $streamContext);
+                if ($wsdlContent === false || trim($wsdlContent) === '') {
+                    throw new \RuntimeException("Falha ao carregar WSDL de '{$wsdl}'.");
+                }
+                $wsdlTempFile = tempnam(sys_get_temp_dir(), 'champs_wsdl_');
+                file_put_contents($wsdlTempFile, $wsdlContent);
+                $wsdlPath = $wsdlTempFile;
+            } else {
+                $wsdlTempFile = null;
+                $wsdlPath = $wsdl;
             }
-            $wsdlTempFile = tempnam(sys_get_temp_dir(), 'champs_wsdl_');
-            file_put_contents($wsdlTempFile, $wsdlContent);
 
             try {
-                $client = new \SoapClient($wsdlTempFile, array_replace([
+                $client = new \SoapClient($wsdlPath, array_replace([
                     'trace' => true,
                     'exceptions' => true,
                     'cache_wsdl' => WSDL_CACHE_NONE,
@@ -67,7 +76,9 @@ final class SoapTransport
                     'soap_version' => SOAP_1_2,
                 ], $soapOptions));
             } finally {
-                unlink($wsdlTempFile);
+                if ($wsdlTempFile !== null) {
+                    unlink($wsdlTempFile);
+                }
             }
 
             try {

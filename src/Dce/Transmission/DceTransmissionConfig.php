@@ -21,6 +21,13 @@ final class DceTransmissionConfig
 
     public function getAuthorizationWsdl(): string
     {
+        $env = $this->isProduction() ? 'prod' : 'homolog';
+        $local = __DIR__ . "/../../resources/wsdl/dce/{$env}/DCeAutorizacao.wsdl";
+
+        if (file_exists($local)) {
+            return $local;
+        }
+
         return $this->isProduction()
             ? 'https://dce.fazenda.pr.gov.br/dce/DCeAutorizacao?wsdl'
             : 'https://homologacao.dce.fazenda.pr.gov.br/dce/DCeAutorizacao?wsdl';
