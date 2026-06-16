@@ -1,71 +1,71 @@
-﻿{#
-  DANFE simplificada â€” fragmento para embutir em relatÃ³rio A4.
-  Sem <html>/<head>/<body>: o papel Ã© controlado pelo template pai.
+{#
+  DANFE simplificada — fragmento para embutir em relatório A4.
+  Sem <html>/<head>/<body>: o papel é controlado pelo template pai.
 #}
 
 <style>
-    .danfe-a4-page { width: 100%; min-height: 120mm; margin: 5mm 0 0 0; border: 1px solid #000; padding: 7mm 8mm 8mm 8mm; box-sizing: border-box; font-family: DejaVu Sans, Arial, sans-serif; font-size: 11.5px; color: #000; line-height: 1.18; page-break-inside: avoid; text-align: left; }
+    .danfe-a4-page { width: 100%; margin: 4mm 0 0 0; border: 1px solid #000; padding: 4mm 5mm; box-sizing: border-box; font-family: DejaVu Sans, Arial, sans-serif; font-size: 8.5px; color: #000; line-height: 1.15; page-break-inside: avoid; text-align: left; }
     .danfe-a4-page * { box-sizing: border-box; }
-    .danfe-a4-page .notice { text-align: center; font-weight: bold; font-size: 12px; margin-bottom: 2px; }
-    .danfe-a4-page .title  { text-align: center; font-weight: bold; font-size: 17px; line-height: 1.12; margin-bottom: 5px; text-transform: uppercase; }
-    .danfe-a4-page .center-line { text-align: center; margin-bottom: 2px; }
+    .danfe-a4-page .notice { text-align: center; font-weight: bold; font-size: 9px; margin-bottom: 2px; }
+    .danfe-a4-page .title  { text-align: center; font-weight: bold; font-size: 12px; line-height: 1.1; margin-bottom: 3px; text-transform: uppercase; }
+    .danfe-a4-page .center-line { text-align: center; margin-bottom: 1px; }
     .danfe-a4-page .label { font-weight: bold; text-transform: uppercase; }
-    .danfe-a4-page .section { margin-top: 7px; padding-top: 5px; border-top: 1px solid #000; text-align: left; }
-    .danfe-a4-page .section-title { font-weight: bold; text-transform: uppercase; text-align: center; margin-bottom: 4px; font-size: 12.5px; }
-    .danfe-a4-page .section .line { margin-bottom: 2px; }
-    .danfe-a4-page .value-box { margin-top: 10px; border: 1px solid #000; padding: 4px 8px; text-align: center; }
-    .danfe-a4-page .value-label  { font-size: 10px; text-transform: uppercase; font-weight: bold; display: block; margin-bottom: 2px; }
-    .danfe-a4-page .value-amount { font-size: 18px; font-weight: bold; display: block; }
-    .danfe-a4-page .access-key-title { margin-top: 9px; text-align: center; font-weight: bold; font-size: 13px; }
-    .danfe-a4-page .access-key-value { text-align: center; font-weight: bold; font-size: 12px; line-height: 1.25; word-spacing: 2px; margin-top: 3px; }
+    .danfe-a4-page .section { margin-top: 4px; padding-top: 3px; border-top: 1px solid #000; text-align: left; }
+    .danfe-a4-page .section-title { font-weight: bold; text-transform: uppercase; text-align: center; margin-bottom: 2px; font-size: 9px; }
+    .danfe-a4-page .section .line { margin-bottom: 1px; }
+    .danfe-a4-page .value-box { margin-top: 5px; border: 1px solid #000; padding: 2px 6px; text-align: center; }
+    .danfe-a4-page .value-label  { font-size: 7.5px; text-transform: uppercase; font-weight: bold; display: block; margin-bottom: 1px; }
+    .danfe-a4-page .value-amount { font-size: 14px; font-weight: bold; display: block; }
+    .danfe-a4-page .access-key-title { margin-top: 5px; text-align: center; font-weight: bold; font-size: 9px; }
+    .danfe-a4-page .access-key-value { text-align: center; font-weight: bold; font-size: 8px; line-height: 1.2; word-spacing: 1px; margin-top: 2px; }
     {% block extra_styles %}{% endblock %}
 </style>
 
 <div class="danfe-a4-page">
 
     {% if document.environment == '2' or document.environment == 'homolog' %}
-        <div class="notice">EMITIDA EM HOMOLOGAÃ‡ÃƒO â€” SEM VALOR FISCAL</div>
+        <div class="notice">EMITIDA EM HOMOLOGAÇÃO — SEM VALOR FISCAL</div>
     {% endif %}
 
     {% block logo %}{% endblock %}
 
-    <div class="title">DANFE SIMPLIFICADA â€” NOTA FISCAL ELETRÃ”NICA</div>
+    <div class="title">DANFE SIMPLIFICADA — NOTA FISCAL ELETRÔNICA</div>
 
-    <div class="center-line">NÂº {{ nfe.number }}&nbsp;&nbsp; SÃ‰RIE {{ nfe.series }}</div>
-    <div class="center-line"><span class="label">DATA DE EMISSÃƒO:</span> {{ nfe.issued_at|date('d/m/Y H:i') }}</div>
+    <div class="center-line">Nº {{ nfe.number }}&nbsp;&nbsp; SÉRIE {{ nfe.series }}</div>
+    <div class="center-line"><span class="label">DATA DE EMISSÃO:</span> {{ nfe.issued_at|date('d/m/Y H:i') }}</div>
 
     <div class="section">
         <div class="section-title">Emitente</div>
         <div class="line"><span class="label">CNPJ EMITENTE:</span> {{ nfe.emit_document ?: '-' }}</div>
         <div class="line"><span class="label">NOME EMITENTE:</span> {{ nfe.emit_name ?: '-' }}</div>
         <div class="line">
-            <span class="label">ENDEREÃ‡O:</span>
+            <span class="label">ENDEREÇO:</span>
             {{ nfe.emit_address_street ?: '-' }}, {{ nfe.emit_address_number ?: '' }}
-            {% if nfe.emit_address_complement %} â€“ {{ nfe.emit_address_complement }}{% endif %}
-            â€” {{ nfe.emit_address_neighborhood ?: '' }}
-            â€” {{ nfe.emit_address_city ?: '' }}/{{ nfe.emit_address_state ?: '' }}
-            â€” CEP {{ nfe.emit_address_zipcode ?: '' }}
+            {% if nfe.emit_address_complement %} – {{ nfe.emit_address_complement }}{% endif %}
+            — {{ nfe.emit_address_neighborhood ?: '' }}
+            — {{ nfe.emit_address_city ?: '' }}/{{ nfe.emit_address_state ?: '' }}
+            — CEP {{ nfe.emit_address_zipcode ?: '' }}
         </div>
     </div>
 
     <div class="section">
-        <div class="section-title">DestinatÃ¡rio</div>
-        <div class="line"><span class="label">CNPJ/CPF DESTINATÃRIO:</span> {{ nfe.dest_document ?: '-' }}</div>
-        <div class="line"><span class="label">NOME DESTINATÃRIO:</span> {{ nfe.dest_name ?: '-' }}</div>
+        <div class="section-title">Destinatário</div>
+        <div class="line"><span class="label">CNPJ/CPF DESTINATÁRIO:</span> {{ nfe.dest_document ?: '-' }}</div>
+        <div class="line"><span class="label">NOME DESTINATÁRIO:</span> {{ nfe.dest_name ?: '-' }}</div>
         <div class="line">
-            <span class="label">ENDEREÃ‡O:</span>
+            <span class="label">ENDEREÇO:</span>
             {{ nfe.dest_address_street ?: '-' }}, {{ nfe.dest_address_number ?: '' }}
-            {% if nfe.dest_address_complement %} â€“ {{ nfe.dest_address_complement }}{% endif %}
-            â€” {{ nfe.dest_address_neighborhood ?: '' }}
-            â€” {{ nfe.dest_address_city ?: '' }}/{{ nfe.dest_address_state ?: '' }}
-            â€” CEP {{ nfe.dest_address_zipcode ?: '' }}
+            {% if nfe.dest_address_complement %} – {{ nfe.dest_address_complement }}{% endif %}
+            — {{ nfe.dest_address_neighborhood ?: '' }}
+            — {{ nfe.dest_address_city ?: '' }}/{{ nfe.dest_address_state ?: '' }}
+            — CEP {{ nfe.dest_address_zipcode ?: '' }}
         </div>
     </div>
 
     {% if nfe.transp_name %}
     <div class="section">
         <div class="section-title">Transportador</div>
-        <div class="line"><span class="label">RAZÃƒO SOCIAL:</span> {{ nfe.transp_name }}</div>
+        <div class="line"><span class="label">RAZÃO SOCIAL:</span> {{ nfe.transp_name }}</div>
         {% if nfe.transp_document %}
         <div class="line"><span class="label">CNPJ/CPF:</span> {{ nfe.transp_document }}</div>
         {% endif %}
