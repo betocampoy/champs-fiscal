@@ -1,12 +1,15 @@
 {
   "name": "betocampoy/champs-fiscal",
-  "description": "Componente fiscal reutilizável para emissão, consulta, cancelamento e recursos DACE/DC-e.",
+  "description": "Componente fiscal reutilizável para DC-e (DACE) e NFS-e Nacional — emissão, consulta, cancelamento.",
   "type": "library",
   "license": "MIT",
   "keywords": [
     "fiscal",
     "dce",
     "dace",
+    "nfse",
+    "nfs-e",
+    "nota-fiscal-servico",
     "soap",
     "certificate",
     "php"
@@ -20,7 +23,8 @@
     "ext-soap": "*",
     "betocampoy/champs-certificate": "^1.0",
     "endroid/qr-code": "^6.0",
-    "picqer/php-barcode-generator": "^3.2"
+    "picqer/php-barcode-generator": "^3.2",
+    "symfony/http-client": "^6.4 || ^7.0"
   },
   "autoload": {
     "psr-4": {
