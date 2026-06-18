@@ -2,13 +2,13 @@
 
 namespace BetoCampoy\Champs\Fiscal\Nfse\Authorization;
 
+use BetoCampoy\Champs\Certificate\ValueObject\OpenedCertificateData;
 use BetoCampoy\Champs\Fiscal\Nfse\Request\Builder\NfseAuthorizationPayload;
 use BetoCampoy\Champs\Fiscal\Nfse\Signer\NfseSignatureConfigFactory;
 use BetoCampoy\Champs\Fiscal\Nfse\Transmission\NfseTransmitter;
 use BetoCampoy\Champs\Fiscal\Transmission\Dto\DocumentResponse;
 use BetoCampoy\Champs\Fiscal\Transmission\Transport\HttpTlsPemCredentials;
 use BetoCampoy\Champs\Fiscal\Xml\XmlSigner;
-use BetoCampoy\Champs\Certificate\ValueObject\OpenedCertificateData;
 use InvalidArgumentException;
 use RuntimeException;
 use Throwable;
@@ -49,10 +49,8 @@ final class NfseAuthorizationService
 
             $data = $this->dataFactory->create($payload);
 
-            // 1. Gera o XML da DPS
             $xml = $this->xmlBuilder->build($data);
-
-            // 2. Assina o XML referenciando o elemento infDPS pelo Id
+            
             $signedXml = $this->signer->sign(
                 xml: $xml,
                 referenceId: $data->getDpsId(),
@@ -61,11 +59,13 @@ final class NfseAuthorizationService
                 config: NfseSignatureConfigFactory::makeForDps(),
             );
 
-            // 3. GZIP + Base64
+            $signedXml = $this->forceXmlUtf8Declaration($signedXml);
+
             $compressed = gzencode($signedXml);
             if ($compressed === false) {
                 throw new RuntimeException('Falha ao comprimir o XML da DPS (gzencode).');
             }
+
             $dpsXmlGZipB64 = base64_encode($compressed);
 
             $tlsCredentials = new HttpTlsPemCredentials(
@@ -73,9 +73,7 @@ final class NfseAuthorizationService
                 privateKeyPem: $certificate->getPrivateKey(),
             );
 
-            // 4. Transmite para a API
             return $this->transmitter->emit($dpsXmlGZipB64, $tlsCredentials);
-
         } catch (Throwable $e) {
             return new DocumentResponse(
                 success: false,
@@ -95,5 +93,18 @@ final class NfseAuthorizationService
         if (trim($certificate->getPrivateKey()) === '') {
             throw new InvalidArgumentException('Certificado digital não contém a chave privada PEM.');
         }
+    }
+
+    private function forceXmlUtf8Declaration(string $xml): string
+    {
+        $xml = ltrim($xml);
+
+        $xml = preg_replace(
+            '/^<\?xml\s+version="1\.0"\s*(?:encoding="[^"]*")?\s*\?>/i',
+            '',
+            $xml
+        );
+
+        return '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . ltrim((string) $xml);
     }
 }

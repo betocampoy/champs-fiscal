@@ -43,4 +43,46 @@ final class NfseFacade
     ): DocumentResponse {
         return $this->queryService->query($accessKey, $certificate);
     }
+
+    /**
+     * Retorna o XML da NFS-e decodificado (gzip+base64 → string XML).
+     *
+     * @throws \RuntimeException se a consulta falhar ou o XML não estiver disponível
+     */
+    public function getXml(
+        string $accessKey,
+        OpenedCertificateData $certificate,
+    ): string {
+        $response = $this->query($accessKey, $certificate);
+
+        if (!$response->isSuccess()) {
+            throw new \RuntimeException($response->getError() ?? 'Falha ao consultar NFS-e na SEFIN.');
+        }
+
+        $xmlGZipB64 = $response->getParsedValue('nfse_xml_b64');
+
+        if (!$xmlGZipB64) {
+            throw new \RuntimeException('XML da NFS-e não disponível na resposta da SEFIN.');
+        }
+
+        $xml = gzdecode(base64_decode((string)$xmlGZipB64));
+
+        if ($xml === false) {
+            throw new \RuntimeException('Falha ao decodificar o XML da NFS-e.');
+        }
+
+        return $xml;
+    }
+
+    /**
+     * Retorna o conteúdo da DANFSE (HTML ou PDF).
+     * Use $response->getRawResponse() para o body e
+     * $response->getParsedValue('content_type') para o MIME type.
+     */
+    public function getDanfse(
+        string $accessKey,
+        OpenedCertificateData $certificate,
+    ): DocumentResponse {
+        return $this->queryService->danfse($accessKey, $certificate);
+    }
 }

@@ -40,4 +40,26 @@ final class NfseQueryService
             );
         }
     }
+
+    public function danfse(
+        string $accessKey,
+        OpenedCertificateData $certificate,
+    ): DocumentResponse {
+        try {
+            $tlsCredentials = new HttpTlsPemCredentials(
+                certificatePem: $certificate->getCertificate(),
+                privateKeyPem: $certificate->getPrivateKey(),
+            );
+
+            return $this->transmitter->danfse($accessKey, $tlsCredentials);
+
+        } catch (Throwable $e) {
+            return new DocumentResponse(
+                success: false,
+                rawResponse: '',
+                parsed: null,
+                error: $e->getMessage(),
+            );
+        }
+    }
 }

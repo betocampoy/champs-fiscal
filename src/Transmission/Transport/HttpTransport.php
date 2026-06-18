@@ -53,6 +53,7 @@ final class HttpTransport implements HttpTransportInterface
     public function get(
         string $url,
         HttpTlsCredentialsInterface $tlsCredentials,
+        array $headers = [],
     ): HttpTransportResponse {
         $tempFiles = new HttpTlsTempFiles($tlsCredentials);
         $tempFiles->create();
@@ -61,9 +62,7 @@ final class HttpTransport implements HttpTransportInterface
             $client = $this->buildClient($tempFiles, $tlsCredentials);
 
             $response = $client->request('GET', $url, [
-                'headers' => [
-                    'Accept' => 'application/json',
-                ],
+                'headers' => array_merge(['Accept' => 'application/json'], $headers),
             ]);
 
             return new HttpTransportResponse(

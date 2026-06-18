@@ -15,8 +15,12 @@ interface HttpTransportInterface
         array $headers = [],
     ): HttpTransportResponse;
 
+    /**
+     * @param array<string, string> $headers
+     */
     public function get(
         string $url,
         HttpTlsCredentialsInterface $tlsCredentials,
+        array $headers = [],
     ): HttpTransportResponse;
 }

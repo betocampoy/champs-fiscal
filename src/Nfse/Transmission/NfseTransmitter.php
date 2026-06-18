@@ -86,4 +86,38 @@ final class NfseTransmitter
             );
         }
     }
+
+    public function danfse(
+        string $accessKey,
+        HttpTlsCredentialsInterface $tlsCredentials,
+    ): DocumentResponse {
+        try {
+            $response = $this->transport->get(
+                url: $this->config->getDanfseUrl($accessKey),
+                tlsCredentials: $tlsCredentials,
+                headers: ['Accept' => 'text/html,application/xhtml+xml,application/pdf,*/*'],
+            );
+
+            $headers     = $response->getHeaders();
+            $contentType = $headers['content-type'][0] ?? $headers['Content-Type'][0] ?? 'text/html; charset=utf-8';
+
+            return new DocumentResponse(
+                success: $response->isSuccess(),
+                rawResponse: $response->getBody(),
+                parsed: [
+                    'content_type' => $contentType,
+                    'http_status'  => $response->getStatusCode(),
+                    'environment'  => $this->config->getEnvironment(),
+                ],
+                error: $response->isSuccess() ? null : "DANFSE indisponível (HTTP {$response->getStatusCode()}).",
+            );
+        } catch (Throwable $e) {
+            return new DocumentResponse(
+                success: false,
+                rawResponse: '',
+                parsed: ['environment' => $this->config->getEnvironment()],
+                error: $e->getMessage(),
+            );
+        }
+    }
 }
