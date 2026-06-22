@@ -86,10 +86,11 @@ final class HttpTransport implements HttpTransportInterface
         }
 
         $options = [
-            'verify_peer' => $this->verifyPeer,
-            'verify_host' => $this->verifyPeer,
-            'local_cert' => $tempFiles->getCertificatePath(),
-            'local_pk' => $tempFiles->getPrivateKeyPath(),
+            'verify_peer'  => $this->verifyPeer,
+            'verify_host'  => $this->verifyPeer,
+            'local_cert'   => $tempFiles->getCertificatePath(),
+            'local_pk'     => $tempFiles->getPrivateKeyPath(),
+            'http_version' => '1.1',
         ];
 
         if ($credentials->getPassphrase() !== null) {
