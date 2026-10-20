@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>DANFSe — NFS-e nº {{ danfse.nfseNumber }}</title>
+    <style>
+        @page { size: A4 portrait; margin: 8mm; }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: DejaVu Sans, sans-serif; font-size: 8px; color: #000; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 3px; }
+        td { border: 1px solid #000; padding: 2px 4px; vertical-align: top; }
+        .nb  { border: none !important; }
+        .lbl { display: block; font-size: 6px; text-transform: uppercase; color: #444; }
+        .val { display: block; font-size: 8px; font-weight: bold; line-height: 1.3; }
+        .sec { background: #d0d0d0; font-size: 8px; font-weight: bold; text-transform: uppercase; padding: 2px 4px; }
+        .center { text-align: center; }
+        .right  { text-align: right; }
+        .homolog-notice {
+            border: 2px solid #000; padding: 3px; text-align: center;
+            font-weight: bold; font-size: 10px; margin-bottom: 3px;
+        }
+        .title    { font-size: 15px; font-weight: bold; line-height: 1.1; }
+        .subtitle { font-size: 8px; }
+        .key-val  { font-size: 9px; font-weight: bold; letter-spacing: 0.3px; }
+        .qr-note  { font-size: 6px; color: #444; text-align: center; line-height: 1.3; }
+        .desc     { font-size: 8px; line-height: 1.35; min-height: 28px; white-space: pre-line; }
+        .total    { background: #efefef; }
+        .total .val { font-size: 10px; }
+        {% block extra_styles %}{% endblock %}
+    </style>
+</head>
+<body>
+
+{% macro field(label, value, attrs) %}
+    <td{% if attrs %} {{ attrs|raw }}{% endif %}>
+        <span class="lbl">{{ label }}</span>
+        <span class="val">{{ value is same as(null) or value == '' ? '-' : value }}</span>
+    </td>
+{% endmacro %}
+
+{% macro money(label, value, attrs) %}
+    <td{% if attrs %} {{ attrs|raw }}{% endif %}>
+        <span class="lbl">{{ label }}</span>
+        <span class="val">{{ value is same as(null) ? '-' : 'R$ ' ~ value|number_format(2, ',', '.') }}</span>
+    </td>
+{% endmacro %}
+
+{% macro party(title, p, emptyText) %}
+    {% import _self as f %}
+    <table>
+        <tr><td colspan="4" class="sec">{{ title }}</td></tr>
+        {% if p is null %}
+            <tr><td colspan="4" class="center" style="font-weight: bold; padding: 4px;">{{ emptyText }}</td></tr>
+        {% else %}
+            <tr>
+                {{ f.field('CNPJ / CPF / NIF', p.document, 'style="width: 25%;"') }}
+                {{ f.field('Inscrição Municipal', p.municipalRegistration, 'style="width: 25%;"') }}
+                {{ f.field('Telefone', p.phone, 'style="width: 25%;"') }}
+                {{ f.field('E-mail', p.email, 'style="width: 25%;"') }}
+            </tr>
+            <tr>
+                {{ f.field('Nome / Nome Empresarial', p.name, 'colspan="4"') }}
+            </tr>
+            <tr>
+                {{ f.field('Endereço', p.address, 'colspan="2"') }}
+                {{ f.field('Município', p.city) }}
+                {{ f.field('CEP', p.zipCode) }}
+            </tr>
+            {% if p.simplesNacional is not null or p.simplesNacionalRegime is not null %}
+            <tr>
+                {{ f.field('Simples Nacional na Data de Competência', p.simplesNacional, 'colspan="2"') }}
+                {{ f.field('Regime de Apuração Tributária pelo SN', p.simplesNacionalRegime, 'colspan="2"') }}
+            </tr>
+            {% endif %}
+        {% endif %}
+    </table>
+{% endmacro %}
+
+{% import _self as f %}
+
+{% if not danfse.production %}
+    <div class="homolog-notice">NFS-e EMITIDA EM AMBIENTE DE PRODUÇÃO RESTRITA — SEM VALIDADE JURÍDICA</div>
+{% endif %}
+
+{# ═══ CABEÇALHO ═════════════════════════════════════════════════════════════════ #}
+<table>
+    <tr>
+        <td style="width: 22%; vertical-align: middle; text-align: center;">
+            {% block logo %}
+                <div class="title">NFS-e</div>
+                <div class="subtitle">Nota Fiscal de<br>Serviço Eletrônica</div>
+            {% endblock %}
+        </td>
+        <td style="width: 56%; vertical-align: middle; text-align: center;">
+            <div class="title">DANFSe v1.0</div>
+            <div class="subtitle">Documento Auxiliar da NFS-e</div>
+            {% if danfse.issuingCity %}
+                <div class="subtitle" style="margin-top: 3px;">Município emissor: <strong>{{ danfse.issuingCity }}</strong></div>
+            {% endif %}
+        </td>
+        <td rowspan="2" style="width: 22%; text-align: center; vertical-align: middle;">
+            {% if danfse.qrCodeBase64 %}
+                <img src="data:image/png;base64,{{ danfse.qrCodeBase64 }}" alt="QR Code" style="width: 95px; height: 95px;">
+            {% endif %}
+            <div class="qr-note">
+                A autenticidade desta NFS-e pode ser verificada pela leitura deste código QR
+                ou pela consulta da chave de acesso no portal nacional da NFS-e.
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2">
+            <span class="lbl">Chave de Acesso da NFS-e</span>
+            <span class="key-val">{{ danfse.formattedAccessKey }}</span>
+        </td>
+    </tr>
+</table>
+
+<table>
+    <tr>
+        {{ f.field('Número da NFS-e', danfse.nfseNumber, 'style="width: 25%;"') }}
+        {{ f.field('Competência da NFS-e', danfse.competence, 'style="width: 25%;"') }}
+        {{ f.field('Data e Hora da Emissão da NFS-e', danfse.issuedAt, 'colspan="2" style="width: 50%;"') }}
+    </tr>
+    <tr>
+        {{ f.field('Número da DPS', danfse.dpsNumber) }}
+        {{ f.field('Série da DPS', danfse.dpsSeries) }}
+        {{ f.field('Data e Hora da Emissão da DPS', danfse.dpsIssuedAt, 'colspan="2"') }}
+    </tr>
+</table>
+
+{# ═══ PARTES ════════════════════════════════════════════════════════════════════ #}
+{{ f.party('Emitente da NFS-e — Prestador do Serviço', danfse.provider, '') }}
+{{ f.party('Tomador do Serviço', danfse.taker, 'TOMADOR DO SERVIÇO NÃO IDENTIFICADO NA NFS-e') }}
+{{ f.party('Intermediário do Serviço', danfse.intermediary, 'INTERMEDIÁRIO DO SERVIÇO NÃO IDENTIFICADO NA NFS-e') }}
+
+{# ═══ SERVIÇO PRESTADO ══════════════════════════════════════════════════════════ #}
+<table>
+    <tr><td colspan="4" class="sec">Serviço Prestado</td></tr>
+    <tr>
+        {{ f.field('Código de Tributação Nacional', danfse.nationalTaxCode, 'colspan="4"') }}
+    </tr>
+    <tr>
+        {{ f.field('Código de Tributação Municipal', danfse.municipalTaxCode, 'colspan="2" style="width: 50%;"') }}
+        {{ f.field('Local da Prestação', danfse.serviceLocation, 'style="width: 25%;"') }}
+        {{ f.field('País da Prestação', danfse.serviceCountry, 'style="width: 25%;"') }}
+    </tr>
+    <tr>
+        <td colspan="4">
+            <span class="lbl">Descrição do Serviço</span>
+            <div class="desc">{{ danfse.serviceDescription|default('-') }}</div>
+        </td>
+    </tr>
+</table>
+
+{# ═══ TRIBUTAÇÃO MUNICIPAL ══════════════════════════════════════════════════════ #}
+<table>
+    <tr><td colspan="4" class="sec">Tributação Municipal</td></tr>
+    <tr>
+        {{ f.field('Tributação do ISSQN', danfse.issqnTaxation, 'style="width: 25%;"') }}
+        {{ f.field('País Resultado da Prestação do Serviço', danfse.resultCountry, 'style="width: 25%;"') }}
+        {{ f.field('Município de Incidência do ISSQN', danfse.issqnIncidenceCity, 'style="width: 25%;"') }}
+        {{ f.field('Regime Especial de Tributação', danfse.specialRegime, 'style="width: 25%;"') }}
+    </tr>
+    <tr>
+        {{ f.field('Tipo de Imunidade', danfse.immunityType) }}
+        {{ f.field('Suspensão da Exigibilidade do ISSQN', danfse.suspension) }}
+        {{ f.field('Número Processo Suspensão', danfse.suspensionProcess) }}
+        {{ f.field('Benefício Municipal', danfse.municipalBenefit) }}
+    </tr>
+    <tr>
+        {{ f.money('Valor do Serviço', danfse.serviceValue) }}
+        {{ f.money('Desconto Incondicionado', danfse.unconditionalDiscount) }}
+        {{ f.money('Total Deduções / Reduções', danfse.deductions) }}
+        {{ f.money('Cálculo do BM', danfse.benefitCalculation) }}
+    </tr>
+    <tr>
+        {{ f.money('BC ISSQN', danfse.issqnBase) }}
+        {{ f.field('Alíquota Aplicada', danfse.issqnRate is same as(null) ? null : danfse.issqnRate|number_format(2, ',', '.') ~ '%') }}
+        {{ f.field('Retenção do ISSQN', danfse.issqnWithholding) }}
+        {{ f.money('ISSQN Apurado', danfse.issqnValue) }}
+    </tr>
+</table>
+
+{# ═══ TRIBUTAÇÃO FEDERAL ════════════════════════════════════════════════════════ #}
+<table>
+    <tr><td colspan="4" class="sec">Tributação Federal</td></tr>
+    <tr>
+        {{ f.money('IRRF', danfse.irrf, 'style="width: 25%;"') }}
+        {{ f.money('Contribuição Previdenciária — Retida', danfse.cp, 'style="width: 25%;"') }}
+        {{ f.money('CSLL — Retida', danfse.csll, 'style="width: 25%;"') }}
+        {{ f.field('Retenção PIS / COFINS', danfse.pisCofinsWithholding, 'style="width: 25%;"') }}
+    </tr>
+    <tr>
+        {{ f.money('PIS', danfse.pis) }}
+        {{ f.money('COFINS', danfse.cofins) }}
+        {{ f.money('Total das Retenções Federais', danfse.totalFederalWithheld, 'colspan="2"') }}
+    </tr>
+</table>
+
+{# ═══ VALOR TOTAL ═══════════════════════════════════════════════════════════════ #}
+<table>
+    <tr><td colspan="4" class="sec">Valor Total da NFS-e</td></tr>
+    <tr>
+        {{ f.money('Valor do Serviço', danfse.serviceValue, 'style="width: 25%;"') }}
+        {{ f.money('Desconto Condicionado', danfse.conditionalDiscount, 'style="width: 25%;"') }}
+        {{ f.money('Desconto Incondicionado', danfse.unconditionalDiscount, 'style="width: 25%;"') }}
+        {{ f.money('ISSQN Retido', danfse.issqnWithheld ? danfse.issqnValue : null, 'style="width: 25%;"') }}
+    </tr>
+    <tr>
+        {{ f.money('Total das Retenções Federais', danfse.totalFederalWithheld, 'colspan="3"') }}
+        {{ f.money('Valor Líquido da NFS-e', danfse.netValue, 'class="total"') }}
+    </tr>
+</table>
+
+{# ═══ TOTAIS APROXIMADOS DOS TRIBUTOS ═══════════════════════════════════════════ #}
+<table>
+    <tr><td colspan="4" class="sec">Totais Aproximados dos Tributos</td></tr>
+    <tr>
+        {{ f.field('Federais', danfse.approxFederalTaxes, 'style="width: 25%;"') }}
+        {{ f.field('Estaduais', danfse.approxStateTaxes, 'style="width: 25%;"') }}
+        {{ f.field('Municipais', danfse.approxMunicipalTaxes, 'style="width: 25%;"') }}
+        {{ f.field('Simples Nacional', danfse.approxSimplesNacional, 'style="width: 25%;"') }}
+    </tr>
+</table>
+
+{# ═══ INFORMAÇÕES COMPLEMENTARES ════════════════════════════════════════════════ #}
+{% block additional_info %}
+<table>
+    <tr><td class="sec">Informações Complementares</td></tr>
+    <tr>
+        <td>
+            <div class="desc">{{ danfse.additionalInfo|default('') }}</div>
+        </td>
+    </tr>
+</table>
+{% endblock %}
+
+{% block footer %}{% endblock %}
+
+</body>
+</html>

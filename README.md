@@ -5,7 +5,7 @@ Componente PHP reutilizável para rotinas fiscais brasileiras. Suporta:
 | Documento | Operações |
 |---|---|
 | **DC-e** (Declaração de Conteúdo Eletrônica) | Emissão, consulta, cancelamento, DACE |
-| **NFS-e Nacional** (Nota Fiscal de Serviço Eletrônica) | Emissão, consulta |
+| **NFS-e Nacional** (Nota Fiscal de Serviço Eletrônica) | Emissão, consulta, XML, DANFSe local |
 
 ## Instalação
 
@@ -161,7 +161,30 @@ if ($response->isSuccess()) {
 
 ```php
 $response = $facade->query($chaveNfse, $openedCertificate);
+$xml      = $facade->getXml($chaveNfse, $openedCertificate); // XML autorizado já decodificado
 ```
+
+### DANFSe (gerado localmente)
+
+O serviço `/danfse` do ADN é instável (fica semanas respondendo HTTP 503), então o DANFSe
+é montado a partir do XML autorizado: o mapper gera um `DanfseData` (textos já formatados + QR Code)
+e o template Twig `@ChampsFiscal/nfse/danfse/full_a4.html.twig` segue o leiaute oficial do DANFSe v1.0.
+A conversão para PDF fica com o projeto consumidor (ex.: Dompdf).
+
+```php
+use BetoCampoy\Champs\Fiscal\Nfse\Danfse\Mapper\NfseXmlToDanfseDataMapper;
+
+$danfse = (new NfseXmlToDanfseDataMapper())->map($xml);
+$html   = $twig->render('@ChampsFiscal/nfse/danfse/full_a4.html.twig', ['danfse' => $danfse]);
+
+$dompdf = new \Dompdf\Dompdf();
+$dompdf->loadHtml($html, 'UTF-8');
+$dompdf->setPaper('A4');
+$dompdf->render();
+```
+
+O template expõe os blocos `logo`, `extra_styles`, `additional_info` e `footer` para extensão.
+`NfseFacade::getDanfse()` (download remoto pelo ADN) continua disponível.
 
 ### Abertura do certificado
 
@@ -193,6 +216,7 @@ src/
 ├── Nfse/
 │   ├── Authorization/   Emissão NFS-e (DPS → NFS-e)
 │   ├── Query/           Consulta NFS-e
+│   ├── Danfse/          DTOs + mapper XML → DANFSe (impressão local)
 │   ├── Common/          DTOs compartilhados (Provider, Taker, Service, Values)
 │   ├── Request/         Input e Payload builder
 │   ├── Transmission/    Transmissão REST + configuração
